@@ -1,0 +1,41 @@
+﻿{
+  "name": "easy-swf",
+  "description": "Easier way of using AWS Simple Workflow",
+  "version": "0.1.0",
+  "author": "Chad Macey <chad_macey@hotmail.com>",
+  "homepage": "",
+  "contributors": [
+    "Chad Macey <chad_macey@hotmail.com>"
+  ],
+  "devDependencies": {},
+  "dependencies": {
+    "aws-sdk": "latest",
+    "uuid": "latest",
+    "async": "latest"
+  },
+  "main": "bin/easy-swf",
+  "engines": {
+    "node": ">= 0.8.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/midknight41/easy-swf"
+  },
+  "bugs": {
+    "url": "http://github.com/midknight41/easy-swf/issues"
+  },
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "http://github.com/midknight41/easy-swf/LICENSE.txt"
+    }
+  ],
+  "keywords": [
+    "amazon",
+    "aws",
+    "swf",
+    "workflow"
+  ],
+  "scripts": {},
+  "license": "MIT"
+}
