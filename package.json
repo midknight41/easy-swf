@@ -13,7 +13,7 @@
     "uuid": "latest",
     "async": "latest"
   },
-  "main": "bin/easy-swf",
+  "main": "bin/Workflow.js",
   "engines": {
     "node": ">= 0.8.0"
   },
