@@ -1,14 +1,13 @@
 /// <reference path="imports.d.ts" />
 
-import AWS = module("aws-sdk");
+import AWS = require("aws-sdk");
+import async = require("async");
 
-import async = module("async");
-import a = module("./Activity");
+import a = require("./Activity");
 
 export class EventParser {
-    private events;
 
-    private extractActivities(events: AWS.Swf.HistoryEvent[]): a.Activity[] {
+    public extractActivities(events: AWS.Swf.HistoryEvent[]): a.Activity[] {
 
         //var events = this.events;
         var activityIndex: number[] = [];
@@ -18,7 +17,7 @@ export class EventParser {
         var me = this;
 
         for (var index = 0; index < events.length; index++) {
-            var item = event[index];
+            var item = events[index];
 
             if (item.eventType == "ActivityTaskScheduled") {
                 var activity = new a.Activity();

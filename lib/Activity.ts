@@ -1,17 +1,20 @@
 /// <reference path="imports.d.ts" />
 
-import AWS = module("aws-sdk");
-import simpler = module("./Workflow");
+import AWS = require("aws-sdk");
+import dal = require("./SwfDataAccess");
+import interfaces = require("./Interfaces");
+import utils = require("./Utils");
 
 export class ActivityHost {
 
-    public activityRegister: simpler.ActivityRegister;
+    public activityRegister: interfaces.IActivityRegister;
     public taskList: string;
     private domain: string;
-    private swf: AWS.SimpleWorkflow;
+    //private swf: AWS.SimpleWorkflow;
     private activities = [];
+    private swf: dal.ISwfDataAccess;
 
-    constructor(register: simpler.ActivityRegister, domain:string, taskList: string, swf: AWS.SimpleWorkflow) {
+    constructor(register: interfaces.IActivityRegister, domain: string, taskList: string, swf: dal.ISwfDataAccess) {
 
         this.domain = domain;
         this.swf = swf;
@@ -51,9 +54,9 @@ export class ActivityHost {
             return null;
         }
 
-
     }
     
+    //should I report back anything via this callback...heartbeat perhaps?
     public listen(callback?: (err, data) => void ) {
         this.BeginActivityPolling();
     }
@@ -62,24 +65,20 @@ export class ActivityHost {
 
         var me = this;
 
-        var request = {
-            domain: me.domain,
-            taskList: { name: me.taskList }
-        };
-
-        me.doActivityPoll(me, request);
+        me.doActivityPoll(me, me.domain, me.taskList);
 
     }
     
-    private doActivityPoll(me: ActivityHost, request) {
+    private doActivityPoll(me: ActivityHost, domain: string, taskList: string) {
 
-        simpler.monitor.log("[Activity] looking for activities");
-
-        me.swf.client.pollForActivityTask(request, function (error, data) {
-            simpler.monitor.log("[Activity] polling response");
+        utils.monitor.log("[Activity] looking for activities");
+        
+        me.swf.pollForActivityTask(domain, taskList, function (error, data) {
+            utils.monitor.log("[Activity] polling response");
 
             if (error != null) {
-                simpler.debug.log("ERROR", error);
+                utils.debug.log("pollForActivityTask Error:", error);
+                return;
                 //emit error
             }
 
@@ -87,18 +86,14 @@ export class ActivityHost {
                 var token = data.taskToken;
                 var activity = me.getActivityContainer(data.activityType.name, data.activityType.version);
                 
-                simpler.monitor.log("[Activity] executing", data.activityType.name);
+                utils.monitor.log("[Activity] executing", data.activityType.name);
                 activity.activityCode(null, data.input, function (err?, data2?) {
                     me.proceedAfterActivity(token, err, data2);
                 });
 
             }
 
-            //this recursion is wrong I'm sure. This needs to become more event driven.
-            //possibly use setImmediate?
-            //process.nextTick(function () {
-                me.doActivityPoll(me, request);
-            //});
+            me.doActivityPoll(me, domain, taskList);
             
         });
 
@@ -107,23 +102,16 @@ export class ActivityHost {
     private proceedAfterActivity(taskToken: string, err?: Error, data?) {
         if (err == null) {
 
-            var params: AWS.Swf.RespondActivityTaskCompletedRequest = {
-                taskToken: taskToken,
-                result: data
-            }
-            
-            this.swf.client.respondActivityTaskCompleted(params, function (err, data) {
+            this.swf.respondActivityTaskCompleted(taskToken, data, function (err, data) {
+              if (err != null) utils.debug.log("ERR:respondActivityTaskCompleted", err);
             });
+
         } else {
 
-            console.log("sending error");
-            var failedParams: AWS.Swf.RespondActivityTaskFailedRequest = {
-                taskToken: taskToken,
-                reason: err.message
-            }
+            utils.monitor.log("[Activity] sending error:", err.message);
             
-            this.swf.client.respondActivityTaskFailed(failedParams, function (err, data) {
-                console.log("ERR", err);
+            this.swf.respondActivityTaskFailed(taskToken, err.message, function (err, data) {
+                if (err != null) utils.debug.log("ERR:respondActivityTaskFailed", err);
 
             });
         }
@@ -131,16 +119,8 @@ export class ActivityHost {
 
 }
 
-export interface IActivityDescriptor {
 
-    name: string;
-    version: string;
-    taskList: string;
-    reference: string;
-
-}
-
-export class ActivityCallbackContainer implements IActivityDescriptor {
+export class ActivityCallbackContainer implements interfaces.IActivityDescriptor {
 
     public name: string;
     public version: string;
@@ -149,27 +129,27 @@ export class ActivityCallbackContainer implements IActivityDescriptor {
     public activityCode: (err: any, input: string, callback: (err: Error, data: any) => void) => void;
 }
 
-export class Activity implements IActivityDescriptor {
+export class Activity implements interfaces.IActivity {
     public reference: string;
     public name: string;
     public version: string;
     public taskList: string;
     public result: string;
     public input: string;
-    public hasStarted: bool = false;
-    public hasCompleted: bool = false;
-    public hasBeenScheduled: bool = false;
-    public hasFailed: bool = false;
-    public hasTimedOut: bool = false;
+    public hasStarted: boolean = false;
+    public hasCompleted: boolean = false;
+    public hasBeenScheduled: boolean = false;
+    public hasFailed: boolean = false;
+    public hasTimedOut: boolean = false;
 
 }
 
 export class ActivityAdapter {
-    constructor(desc: IActivityDescriptor) {
+    constructor(desc: interfaces.IActivityDescriptor) {
         this.desc = desc;
     }
 
-    private desc: IActivityDescriptor;
+    private desc: interfaces.IActivityDescriptor;
 
     public fill(): Activity {
         var activity = new Activity();
