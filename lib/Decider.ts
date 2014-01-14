@@ -7,6 +7,7 @@ import a = require("./Activity");
 import e = require("./EventParser");
 import interfaces = require("./Interfaces");
 import wrapper = require("./FunctionWrapper");
+import errors = require("./CustomErrors");
 
 export class DecisionHost {
   private swf: DataAccess.ISwfDataAccess;
@@ -15,6 +16,7 @@ export class DecisionHost {
   private domain: string;
   private decisionLogic;
   private eventParser: e.EventParser;
+  private feedbackHandler: (err: Error, message: string) => void;
 
   constructor(register: interfaces.IActivityRegister, domain: string, taskList: string, swf: DataAccess.ISwfDataAccess, eventParser: e.EventParser) {
 
@@ -25,8 +27,16 @@ export class DecisionHost {
     this.eventParser = eventParser;
   }
 
-  public listen(decisionLogic: (err, context: DecisionContext) => void) {
+  public handleDecision(decisionLogic: (err, context: DecisionContext) => void) {
     this.decisionLogic = decisionLogic;
+  }
+
+  public listen(feedbackHandler?: (err:Error, message: string) => void) {
+
+    if (feedbackHandler != null)
+      this.feedbackHandler = feedbackHandler;
+    else
+      this.feedbackHandler = function (err: Error, message: string) { };
 
     this.BeginDecisionPolling();
 
@@ -43,20 +53,17 @@ export class DecisionHost {
 
   private doDecisionPoll(me: DecisionHost, domain: string, taskList: string) {
 
-    console.log("[Decider] looking for decisions");
+    var me = this;
+
+    me.feedbackHandler(null, "[Decider] looking for decisions");
 
     me.swf.pollForDecisionTask(domain, taskList, function (error, data) {
-      console.log("[Decider] polling response");
-
-      if (error != null) {
-        console.log("doDecisionPoll error:", error);
-        return;
-      }
+      me.feedbackHandler(error, "[Decider] polling response");
 
       if (data != null && data.startedEventId > 0) {
 
-        console.log("[Decider] a decision is required!");
-        var context = new DecisionContext(me.taskList, me.activityRegister, me.eventParser, me.swf, data);
+        me.feedbackHandler(null, "[Decider] a decision is required!");
+        var context = new DecisionContext(me.taskList, me.activityRegister, me.eventParser, me.swf, me.feedbackHandler, data);
 
         me.decisionLogic(error, context);
       }
@@ -77,13 +84,15 @@ export class DecisionContext implements interfaces.IDecisionContext {
   private decisions: AWS.Swf.Decision[] = [];
   private submissionRegistered: boolean = false;
   private activityRegister: interfaces.IActivityRegister;
+  private feedbackHandler: (err: Error, message: string) => void;
 
-  constructor(taskList: string, register: interfaces.IActivityRegister, eventParser: e.EventParser, swf: DataAccess.ISwfDataAccess, state: AWS.Swf.DecisionTask) {
+  constructor(taskList: string, register: interfaces.IActivityRegister, eventParser: e.EventParser, swf: DataAccess.ISwfDataAccess, feedbackHandler: (err: Error, message: string) => void, state: AWS.Swf.DecisionTask) {
 
     this.activityRegister = register;
     this.swf = swf;
     this.state = state;
     this.taskToken = this.state.taskToken;
+    this.feedbackHandler = feedbackHandler != null ? feedbackHandler : function (err: Error, message: string) { };
     this.activities = eventParser.extractActivities(state.events);
   }
 
@@ -98,21 +107,25 @@ export class DecisionContext implements interfaces.IDecisionContext {
     }
   }
 
+  //This really should allow the user to supply a reason and a detail message
   public failWorkflow(err: Error) {
+    var me = this;
 
     this.swf.respondFailWorkflowExecution(this.taskToken, err.message, err.message, function (err, data) {
-      console.log("[Decider] failed Workflow");
-      if (err != null) { console.log("ERROR", err); }
+
+      me.feedbackHandler(err, "[Decider] failed Workflow");
 
     });
   }
 
   public allDone() {
     //finish workflow execution
+    var me = this;
 
     this.swf.respondCompleteWorkflowExecution(this.taskToken, function (err, data) {
-      console.log("[Decider] completed Workflow");
-      if (err != null) { console.log("ERROR", err); }
+
+      me.feedbackHandler(err, "[Decider] completed Workflow");
+
     });
   }
 
@@ -170,25 +183,31 @@ export class DecisionContext implements interfaces.IDecisionContext {
 
   public doActivity(activity: interfaces.IActivity, data?: string) {
 
+    if (activity == null) {
+      this.feedbackHandler(new errors.NullArgumentError("activity cannot be null"), "[Decider] ERROR: doActivity");
+      return;
+    }
+
     this.doActivityByName(activity.name, activity.version, activity.taskList, data);
   }
 
   public doNothing() {
 
-    console.log("[Decider] take no action");
+    var me = this;
+    me.feedbackHandler(null, "[Decider] take no action");
 
     this.swf.respondRecordMarker(this.taskToken, function (err, data) {
-      if (err != null) { console.log("[Decider] ERROR: doNothing", err); }
+      if (err != null) { me.feedbackHandler(err, "[Decider] ERROR: doNothing"); }
 
     });
 
   }
 
-  public doActivityByName(activityName: string, version: string, taskList: string, data?: string) {
+  private doActivityByName(activityName: string, version: string, taskList: string, data?: string) {
     //a decision has been made to do an activity
     //inform swf what is to be done
 
-    console.log("[Decider] scheduling activity", activityName);
+    this.feedbackHandler(null, "[Decider] scheduling activity " + activityName);
 
     if (data == null) data = "";
 
@@ -215,12 +234,12 @@ export class DecisionContext implements interfaces.IDecisionContext {
 
       if (me.submissionRegistered == false) {
 
-        console.log("[Decider] submitting decisions");
+        me.feedbackHandler(null, "[Decider] submitting decisions");
 
         me.submissionRegistered = true;
 
         me.swf.respondScheduleActivityTask(me.taskToken, me.decisions, function (err, data) {
-          if (err != null) { console.log("[Decider] ERROR: respondDecisionTaskCompleted", err); }
+          if (err != null) { me.feedbackHandler(err, "[Decider] ERROR: respondDecisionTaskCompleted"); }
 
         });
 

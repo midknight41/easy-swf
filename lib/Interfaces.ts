@@ -38,7 +38,7 @@ export interface IOptions extends IDomainConfig {
 export interface IDecisionContext {
 
   lastActivity(): IActivity;
-  doActivityByName(activityName: string, version: string, taskList: string, data?: string);
+  //doActivityByName(activityName: string, version: string, taskList: string, data?: string);
   getMatchingActivities(reference: string): IActivity[];
   getFunction(activityRef: string): any;
   getActivityState(reference: string): IActivity;
