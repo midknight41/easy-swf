@@ -4,10 +4,14 @@ import AWS = require("aws-sdk");
 import async = require("async");
 
 import a = require("./Activity");
+import interfaces = require("./Interfaces");
+import errors = require("./CustomErrors");
 
 export class EventParser {
 
-    public extractActivities(events: AWS.Swf.HistoryEvent[]): a.Activity[] {
+    public extractActivities(events: AWS.Swf.HistoryEvent[]): interfaces.IActivity[] {
+
+      if (events == null) throw new errors.NullArgumentError("events is mandatory");
 
         //var events = this.events;
         var activityIndex: number[] = [];

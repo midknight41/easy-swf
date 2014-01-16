@@ -3,7 +3,7 @@
 import interfaces = require("../Interfaces");
 import errors = require("../CustomErrors");
 import dec = require("../Decider");
-//import wrapper = require("../FunctionWrapper");
+import help = require("../Helpers/TestHelper");
 
 var gently = new (require("gently"));
 
@@ -74,7 +74,35 @@ var testGroup2 = {
     test.equal(context.activities[0].name, activity.name, "activities not properly set");
     test.done();
   },
-  "Throws an error when given bad constructors: TODO": function (test: nodeunit.Test): void {
+  "Throws an error when given bad constructors": function (test: nodeunit.Test): void {
+
+    var taskList = "myList";
+
+    var swf = gently.stub("Interfaces", "ISwfDataAccess");
+    var reg = gently.stub("Activity", "ActivityRegister");
+    var parser = gently.stub("EventParser", "EventParser");
+    var state = { events: [] };
+
+    help.nullErrorTest(test, function () {
+      var context = new dec.DecisionContext(null, reg, parser, swf, null, state);
+    });
+
+    help.nullErrorTest(test, function () {
+      var context = new dec.DecisionContext(taskList, null, parser, swf, null, state);
+    });
+
+    help.nullErrorTest(test, function () {
+      var context = new dec.DecisionContext(taskList, reg, null, swf, null, state);
+    });
+
+    help.nullErrorTest(test, function () {
+      var context = new dec.DecisionContext(taskList, reg, parser, null, null, state);
+    });
+
+    help.nullErrorTest(test, function () {
+      var context = new dec.DecisionContext(taskList, reg, parser, swf, null, null);
+    });
+
     test.done();
   },
   "Can define a feedbackHandler and receive messages": function (test: nodeunit.Test): void {

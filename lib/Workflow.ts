@@ -1,7 +1,7 @@
 /// <reference path="imports.d.ts" />
 
-export var monitor = console;
-export var debug = console;
+//export var monitor = console;
+//export var debug = console;
 
 import AWS = require("aws-sdk");
 import a = require("./Activity");
@@ -20,6 +20,9 @@ export class WorkflowClient {
   private swf: dal.ISwfDataAccess;
 
   constructor(workflow: interfaces.IOptions, awsConfig: any, swf?: dal.ISwfDataAccess) {
+    
+    this.validateOptions(workflow);
+    this.validateConfig(awsConfig);
 
     this.config = awsConfig;
 
@@ -27,13 +30,28 @@ export class WorkflowClient {
 
     this.workflow = workflow;
 
-    //validate options before preceding
-
     if (swf == null)
       this.swf = new dal.SwfDataAccess();
     else
       this.swf = swf;
 
+  }
+
+  validateOptions(workflow: interfaces.IOptions) {
+    if (workflow == null) throw new errors.NullArgumentError("workflow");
+    if (workflow.domain == null) throw new errors.InvalidArgumentError("domain is mandatory");
+    if (workflow.reference == null) throw new errors.InvalidArgumentError("reference is mandatory");
+    if (workflow.taskList == null) throw new errors.InvalidArgumentError("taskList is mandatory");
+    if (workflow.workflowType == null) throw new errors.InvalidArgumentError("workflowType is mandatory");
+    if (workflow.workflowTypeVersion == null) throw new errors.InvalidArgumentError("workflowTypeVersion is mandatory");
+  }
+
+  validateConfig(awsConfig: any) {
+
+    if (awsConfig == null) throw new errors.NullArgumentError("awsConfig");
+    if (awsConfig.accessKeyId == null) throw new errors.InvalidArgumentError("accessKeyId is mandatory");
+    if (awsConfig.secretAccessKey == null) throw new errors.InvalidArgumentError("secretAccessKey is mandatory");
+    if (awsConfig.region == null) throw new errors.InvalidArgumentError("region is mandatory");
   }
 
   createActivityHost(taskList: string): a.ActivityHost {

@@ -7,13 +7,13 @@ export interface IActivityDescriptor {
 }
 
 export interface IActivity extends IActivityDescriptor {
-  result: string;
-  input: string;
-  hasStarted: boolean;
-  hasCompleted: boolean;
-  hasBeenScheduled: boolean;
-  hasFailed: boolean;
-  hasTimedOut: boolean;
+  result?: string;
+  input?: string;
+  hasStarted?: boolean;
+  hasCompleted?: boolean;
+  hasBeenScheduled?: boolean;
+  hasFailed?: boolean;
+  hasTimedOut?: boolean;
 }
 
 export interface IActivityRegister {
