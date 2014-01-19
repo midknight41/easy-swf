@@ -106,7 +106,7 @@ export class ActivityHost {
         } else {
 
           me.feedbackHandler(null, "[Activity] executing " + data.activityType.name);
-          activity.activityCode(null, data.input, function (err?, data2?) {
+          activity.activityCode(null, data.input, function (err?: Error, data2?: string) {
             me.proceedAfterActivity(token, err, data2);
           });
 
@@ -121,22 +121,24 @@ export class ActivityHost {
 
   }
 
-  private proceedAfterActivity(taskToken: string, err?: Error, data?) {
+  private proceedAfterActivity(taskToken: string, err?: Error, data?: string) {
 
     var me = this;
 
+    data = data == null ? "" : data;
+
     if (err == null) {
 
-      me.swf.respondActivityTaskCompleted(taskToken, data, function (err, data) {
-        if (err != null) me.feedbackHandler(err, "ERR:respondActivityTaskCompleted");
+      me.swf.respondActivityTaskCompleted(taskToken, data, function (err1, data1) {
+        if (err1 != null) me.feedbackHandler(err, "ERR:respondActivityTaskCompleted");
       });
 
     } else {
 
-      me.feedbackHandler(err, "[Activity] sending error");
+      me.feedbackHandler(err, "[Activity] sending failure");
 
-      me.swf.respondActivityTaskFailed(taskToken, err.message, function (err, data) {
-        if (err != null) me.feedbackHandler(err, "ERR:respondActivityTaskFailed");
+      me.swf.respondActivityTaskFailed(taskToken, err.message, function (err2, data2) {
+        if (err2 != null) me.feedbackHandler(err, "ERR:respondActivityTaskFailed");
 
       });
     }

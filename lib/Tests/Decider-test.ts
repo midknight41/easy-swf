@@ -25,7 +25,7 @@ var testGroup = {
     var parser = gently.stub("EventParser", "EventParser");
 
     var host = new dec.DecisionHost(reg, domain, taskList, swf, parser);
-
+    
     test.notEqual(host, null, "nothing returned");
     test.equal(host.taskList, taskList, "taskList not set");
 
@@ -122,7 +122,8 @@ var testGroup2 = {
 
     var called = false;
 
-    var fnc = function (err, message) {
+    var fnc = function (err, message, c) {
+      test.equal(c, context, "did not receive the correct context object");
       test.equal(err, null, "unexpected error from feedbackHandler");
       test.equal((message.length > 0), true, "no message returned when one was expected");
       called = true;
@@ -143,9 +144,10 @@ var testGroup2 = {
       return ([t.activity]);
     });
 
-    gently.expect(t.reg, "getActivityByRef", function (events) {
+    gently.expect(t.reg, "getActivityDescriptorByRef", function (events) {
       return (t.activity);
     });
+
 
     var context = new dec.DecisionContext(t.taskList, t.reg, t.parser, t.swf, null, t.state);
 
