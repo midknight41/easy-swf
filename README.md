@@ -18,26 +18,33 @@ To avoid having to put version numbers and task list names into the code (which 
 			"region": "[YourRegion]"
 		},
 
-	"workflow": 
-		{
-			"domain": "Examples",
-			"reference": "ExampleWorkflow",
-			"workflowType" : "ExampleWorkflow",
-			"workflowTypeVersion" : "1",
-			"taskList": "mainList",
-			"activities":
-			[{
-				"reference": "Activity1",
-				"name": "Activity1",
-				"version": "1",
-				"taskList": "mainList"
-			}, {
-				"reference": "Activity2", 
-				"name": "Activity2",
-				"version": "1",
-				"taskList": "mainList"
-			}]
-		}
+	"workflow": {
+        "domain": "ExampleDomain",
+		"reference": "example1",
+		"workflowType" : "example1",
+		"workflowTypeVersion" : "1",
+        "taskList": "taskList",
+        "activities": [
+            { 
+                "reference": "taskOne",
+                "name": "taskOne",
+                "version": "1",
+                "taskList": "taskList"
+            },
+            {
+                "reference": "taskTwo",
+                "name": "taskTwo",
+                "version": "1",
+                "taskList": "taskList"
+            },
+            {
+                "reference": "taskThree",
+                "name": "taskThree",
+                "version": "1",
+                "taskList": "taskList"
+            }
+        ]
+    }
 }
 ```
 
