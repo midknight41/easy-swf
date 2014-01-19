@@ -1,6 +1,6 @@
 ﻿#Easy SWF
 
-Easy SWF is a module made to make using the AWS Simple Workflow Service a little easier to use. At the moment this is just experimental and pretty unstable.
+Easy SWF is a module made to make using the AWS Simple Workflow Service a little easier to use.
 
 You need to be familiar with how SWF works. This [link](http://docs.aws.amazon.com/amazonswf/latest/developerguide/swf-dg-basic.html) is useful for understanding the core concepts.
 
@@ -59,23 +59,27 @@ var client = new easy.WorkflowClient(workflow, awsConfig);
 ##How to handle activities
 
 ```
-var taskList = workflow.taskList;
+var acts = client.createActivityHost("taskList");
 
-var acts = client.createActivityHost(taskList);
+acts.handleActivity("taskOne", function (err, data, next) {
+  next(null, "one");
+});
 
-acts.handleActivity("Activity1", function activity1(err, data, next) {
+acts.handleActivity("taskTwo", function (err, data, next) {
+  next(null, data + " two");
+});
 
-    next(null, "data");
+acts.handleActivity("taskThree", function (err, data, next) {
+  next(null, data + " three");
+});
+
+acts.listen(function (err: Error, message: string) {
+
+   //get feedback from activity host
+  console.log(message);
 
 });
 
-acts.handleActivity("Activity2", function activity2(err, data, next) {
-
-    next(null, "data");
-
-});
-
-acts.listen();
 ```
 
 
@@ -83,43 +87,57 @@ acts.listen();
 
 ```
 
-var decider = client.createDeciderHost(taskList);
+var decider = client.createDeciderHost("taskList");
 
-decider.listen(function decisionLogic(err, context) {
+decider.handleDecision(function decisionLogic(err, context) {
 
-	if(err!=null) console.log("oh dear");
+  var taskOne = context.getFunction("taskOne");
+  var taskTwo = context.getFunction("taskTwo");
+  var taskThree = context.getFunction("taskThree");
 
-    var activity1 = context.getActivityState("Activity1");
-    var activity2 = context.getActivityState("Activity2");
-    
-    if (activity1.hasBeenScheduled == false) {
-        context.doActivity(activity1);
-        return;
+  taskOne("input", function (feedErr, feedData) {
 
-    } else {
+    if (feedErr != null) { context.failWorkflow(feedErr); return; }
 
-        if (activity1.hasCompleted == true) {
+    taskTwo(feedData, function (summaryErr, summaryData) {
 
-            if (activity2.hasBeenScheduled == false) {
-				//pass the data from one activity to the next
-				context.doActivity(activity2, activity1.result);
-                return;
-            }
+      if (summaryErr != null) { context.failWorkflow(summaryErr); return; }
 
-            if (activity2.hasCompleted == true) {
-                context.allDone();
-                return;
-            }
-        }
+      taskThree(summaryData, function (finalErr, finalData) {
+        if (finalErr != null) { context.failWorkflow(finalErr); return; }
+
+        console.log(finalData);
+        context.allDone();
+      });
+
+    });
+
+  });
+
+});
+
+decider.listen(function (err, message, context) {
+
+  if (err != null) {
+    console.log("[Framework Error]", err);
+
+    if (context != null) {
+      context.failWorkflow(err);
+      return;
     }
+  }
+
+  console.log(message);
+
 });
 
 ```
 
 ##How to start a workflow
 ```
-client.startWorkflow("ExampleWorkflow", function errorHandler(err) {
+client.startWorkflow("example1", function whenDone(err) {
 
 });
+
 ```
 
