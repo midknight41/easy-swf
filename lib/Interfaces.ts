@@ -1,12 +1,8 @@
-
-export interface IActivityDescriptor {
+export interface IActivity {
   name: string;
   version: string;
   taskList: string;
   reference: string;
-}
-
-export interface IActivity extends IActivityDescriptor {
   result?: string;
   input?: string;
   hasStarted?: boolean;
@@ -17,9 +13,8 @@ export interface IActivity extends IActivityDescriptor {
 }
 
 export interface IActivityRegister {
-  getActivityDescriptor(name: string, version: string): IActivityDescriptor;
-  getActivityDescriptorByRef(reference: string): IActivityDescriptor;
   getActivityByRef(reference: string): IActivity;
+  getActivity(name: string, version: string): IActivity;
 }
 
 export interface IDomainConfig {

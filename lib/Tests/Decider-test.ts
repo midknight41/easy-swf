@@ -144,7 +144,7 @@ var testGroup2 = {
       return ([t.activity]);
     });
 
-    gently.expect(t.reg, "getActivityDescriptorByRef", function (events) {
+    gently.expect(t.reg, "getActivityByRef", function (events) {
       return (t.activity);
     });
 

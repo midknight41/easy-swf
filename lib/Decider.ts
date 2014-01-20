@@ -148,7 +148,7 @@ export class DecisionContext implements interfaces.IDecisionContext {
 
   public getMatchingActivities(reference: string): interfaces.IActivity[] {
 
-    var activityDefn = this.activityRegister.getActivityDescriptorByRef(reference);
+    var activityDefn = this.activityRegister.getActivityByRef(reference);
 
     var activities = this.activities.filter(function (item, index, array) {
 
@@ -158,21 +158,14 @@ export class DecisionContext implements interfaces.IDecisionContext {
     return (activities);
   }
 
-
-  //Need to add some interfaces to support swapping this object out
   public getActivityState(reference: string): interfaces.IActivity {
 
-    var activityDesc = this.activityRegister.getActivityDescriptorByRef(reference);
+    var activityDesc = this.activityRegister.getActivityByRef(reference);
 
     var activity = this.getFirstActivity(activityDesc.name, activityDesc.version);
 
     if (activity == null) {
-
-      var adapter = new a.ActivityAdapter(activityDesc);
-      activity = adapter.fill();
-
-      //no activity has been found in the event data. Look up details in the config instead
-      return activity;
+      activity = activityDesc;
     }
 
     activity.reference = reference;

@@ -126,7 +126,7 @@ var testGroup = {
     var swf = gently.stub("Interfaces", "ISwfDataAccess");
     var reg = gently.stub("ActivityRegister", "ActivityRegister");
 
-    gently.expect(reg, "getActivityDescriptorByRef", function (reference) {
+    gently.expect(reg, "getActivityByRef", function (reference) {
       test.equal(reference, handler, "activityName not correct on byref");
       return (activity2);
     });
@@ -137,7 +137,7 @@ var testGroup = {
       callback(null, swfData);
     });
 
-    gently.expect(reg, "getActivityDescriptor", function (name, version) {
+    gently.expect(reg, "getActivity", function (name, version) {
       test.equal(name, activityName, "activityName not correct");
       test.equal(version, "1", "version not correct");
       return (activity);
@@ -172,7 +172,7 @@ var testGroup = {
     var swf = gently.stub("Interfaces", "ISwfDataAccess");
     var reg = gently.stub("ActivityRegister", "ActivityRegister");
 
-    gently.expect(reg, "getActivityDescriptorByRef", function (reference) {
+    gently.expect(reg, "getActivityByRef", function (reference) {
       test.equal(reference, handler, "activityName not correct on byref");
       return (null);
     });
@@ -202,6 +202,9 @@ var testGroup = {
   "Handles an error passed from the next() function": function (test: nodeunit.Test): void {
 
     TestNextFunction(test, new Error("msg"), null);
+  },
+  "TODO: add tests for getActivityState + bad config + bad params": function (test: nodeunit.Test, activity: interfaces.IActivity, swfData) {
+    test.done();
   }
 
   
@@ -229,7 +232,7 @@ function TestNextFunction(test, inErr, result) {
   var swf = gently.stub("Interfaces", "ISwfDataAccess");
   var reg = gently.stub("ActivityRegister", "ActivityRegister");
 
-  gently.expect(reg, "getActivityDescriptorByRef", function (reference) {
+  gently.expect(reg, "getActivityByRef", function (reference) {
     test.equal(reference, activity.reference, "activityName not correct on byref");
     return (activity);
   });
@@ -240,7 +243,7 @@ function TestNextFunction(test, inErr, result) {
     callback(null, swfData);
   });
 
-  gently.expect(reg, "getActivityDescriptor", function (name, version) {
+  gently.expect(reg, "getActivity", function (name, version) {
     test.equal(name, activityName, "activityName not correct");
     test.equal(version, "1", "version not correct");
     return (activity);
@@ -291,7 +294,7 @@ function TestAnActivity(test: nodeunit.Test, activity: interfaces.IActivity, swf
   var reg = gently.stub("ActivityRegister", "ActivityRegister");
 
 
-  gently.expect(reg, "getActivityDescriptorByRef", function (reference) {
+  gently.expect(reg, "getActivityByRef", function (reference) {
     test.equal(reference, activity.reference, "activityName not correct on byref");
     return (activity);
   });
@@ -302,7 +305,7 @@ function TestAnActivity(test: nodeunit.Test, activity: interfaces.IActivity, swf
     callback(null, swfData);
   });
 
-  gently.expect(reg, "getActivityDescriptor", function (name, version) {
+  gently.expect(reg, "getActivity", function (name, version) {
     test.equal(name, activityName, "activityName not correct");
     test.equal(version, "1", "version not correct");
     return (activity);

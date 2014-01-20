@@ -27,7 +27,7 @@ export class ActivityHost {
 
     var container: ActivityCallbackContainer = new ActivityCallbackContainer();
 
-    var activity = this.activityRegister.getActivityDescriptorByRef(reference);
+    var activity = this.activityRegister.getActivityByRef(reference);
 
     if (activity == null) {
       //workflow is not configured properly.
@@ -43,11 +43,9 @@ export class ActivityHost {
     this.activities.push(container);
   }
 
-  //it's confusing what object we are talking about here: we have two different things we refer to as an activity
-  //clean this up!
   private getActivityContainer(activityName: string, version: string): ActivityCallbackContainer {
 
-    var activity = this.activityRegister.getActivityDescriptor(activityName, version);
+    var activity = this.activityRegister.getActivity(activityName, version);
 
     var containers = this.activities.filter(function (item, index, array) {
       if (item.reference == activity.reference) return item;
@@ -94,7 +92,6 @@ export class ActivityHost {
       if (error != null) {
         me.feedbackHandler(error, "pollForActivityTask Error:");
         return;
-        //emit error
       }
 
       if (data != null && data.startedEventId > 0) {
@@ -146,8 +143,7 @@ export class ActivityHost {
 
 }
 
-
-export class ActivityCallbackContainer implements interfaces.IActivityDescriptor {
+export class ActivityCallbackContainer implements interfaces.IActivity {
 
   public name: string;
   public version: string;
@@ -169,24 +165,4 @@ export class Activity implements interfaces.IActivity {
   public hasFailed: boolean = false;
   public hasTimedOut: boolean = false;
 
-}
-
-export class ActivityAdapter {
-  constructor(desc: interfaces.IActivityDescriptor) {
-    this.desc = desc;
-  }
-
-  private desc: interfaces.IActivityDescriptor;
-
-  public fill(): Activity {
-    var activity = new Activity();
-
-    activity.name = this.desc.name;
-    activity.version = this.desc.version;
-    activity.taskList = this.desc.taskList;
-    activity.reference = this.desc.reference;
-
-    return activity;
-
-  }
 }
