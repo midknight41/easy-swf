@@ -9,12 +9,13 @@
   ],
   "devDependencies": {
     "gently": "latest",
-    "nodeunit": "latest"
+    "nodeunit": "^0.9.0",
+	"nock": "0.22.x"
   },
   "dependencies": {
-    "aws-sdk": "2.0.x",
-    "uuid": "~1.4.1",
-    "async": "latest"
+    "async": "^0.9.0",
+    "aws-sdk": "^2.0.9",
+    "uuid": "~1.4.1"
   },
   "main": "lib/Workflow.js",
   "engines": {
@@ -40,7 +41,7 @@
     "workflow"
   ],
   "scripts": {
-	"test": "nodeunit lib/Tests"
+    "test": "nodeunit lib/Tests"
   },
   "license": "MIT"
 }
