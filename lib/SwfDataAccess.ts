@@ -5,183 +5,312 @@ export var monitor = console;
 export var debug = console;
 
 export interface ISwfDataAccess {
-    startWorkflowExecution(request: AWS.Swf.StartWorkflowExecutionRequest, callback: (err: Error) => void );
-    pollForActivityTask(domain: string, taskList: string, callback: (err: any, data: AWS.Swf.ActivityTask) => void );
-    respondActivityTaskCanceled(params: AWS.Swf.RespondActivityTaskCanceledRequest, callback: (err: any, data: any) => void );
-    respondActivityTaskCompleted(taskToken: string, data: string, callback: (err: any, data: any) => void );
-    respondActivityTaskFailed(taskToken: string, errMessage: string, callback: (err: any, data: any) => void );
-    pollForDecisionTask(domain: string, taskList: string, callback: (err: any, data: AWS.Swf.DecisionTask) => void );
+  startWorkflowExecution(request: AWS.Swf.StartWorkflowExecutionRequest, callback: (err: Error) => void);
+  pollForActivityTask(domain: string, taskList: string, callback: (err: any, data: AWS.Swf.ActivityTask) => void);
+  respondActivityTaskCanceled(params: AWS.Swf.RespondActivityTaskCanceledRequest, callback: (err: any, data: any) => void);
+  respondActivityTaskCompleted(taskToken: string, data: string, callback: (err: any, data: any) => void);
+  respondActivityTaskFailed(taskToken: string, errMessage: string, callback: (err: any, data: any) => void);
+  pollForDecisionTask(domain: string, taskList: string, callback: (err: any, data: AWS.Swf.DecisionTask) => void);
 
-    //decision task responses
-    respondFailWorkflowExecution(taskToken: string, reason: string, detail: string, callback: (err: any, data: any) => void );
-    respondCompleteWorkflowExecution(taskToken: string, callback: (err: any, data: any) => void );
-    respondRecordMarker(taskToken: string, callback: (err: any, data: any) => void );
-    respondScheduleActivityTask(taskToken: string, decisions: AWS.Swf.Decision[], callback: (err: any, data: any) => void );
+  //decision task responses
+  respondFailWorkflowExecution(taskToken: string, reason: string, detail: string, callback: (err: any, data: any) => void);
+  respondCompleteWorkflowExecution(taskToken: string, callback: (err: any, data: any) => void);
+  respondRecordMarker(taskToken: string, callback: (err: any, data: any) => void);
+  respondScheduleActivityTask(taskToken: string, decisions: AWS.Swf.Decision[], callback: (err: any, data: any) => void);
 
 }
 
 export class SwfDataAccess implements ISwfDataAccess {
-    private swf;
-    constructor() {
+  private swf;
+  constructor() {
 
-        this.swf = new AWS.SimpleWorkflow();
-    }
+    this.swf = new AWS.SimpleWorkflow();
+  }
 
 
-    respondScheduleActivityTask(taskToken: string, decisions: AWS.Swf.Decision[], callback: (err: any, data: any) => void) {
+  respondScheduleActivityTask(taskToken: string, decisions: AWS.Swf.Decision[], callback: (err: any, data: any) => void) {
 
-        var params: AWS.Swf.RespondDecisionTaskCompletedRequest = {
-            taskToken: taskToken,
-            decisions: decisions
+    //debug.log("respondScheduleActivityTask", taskToken);
 
-        };
+    var params: AWS.Swf.RespondDecisionTaskCompletedRequest = {
+      taskToken: taskToken,
+      decisions: decisions
 
-        this.swf.respondDecisionTaskCompleted(params, function (err, data) {
-            callback(err, data);
+    };
+
+    var me = this;
+
+    this.swf.respondDecisionTaskCompleted(params, function (err, data) {
+
+      retryOnNetworkError(err, data,
+        function retry() {
+          me.respondScheduleActivityTask(taskToken, decisions, callback);
+        },
+        function proceed(err2, data2) {
+          callback(err2, data2);
         });
 
-    }
+    });
 
-    respondRecordMarker(taskToken: string, callback: (err: any, data: any) => void ) {
+  }
 
-        var attr: AWS.Swf.RecordMarkerDecisionAttributes = {
-            markerName: "NoActionFromThisDecision"
-        
-        };
+  respondRecordMarker(taskToken: string, callback: (err: any, data: any) => void) {
 
-        var decision: AWS.Swf.Decision = {
-            decisionType: "RecordMarker",
-            recordMarkerDecisionAttributes: attr
+    //debug.log("respondRecordMarker", taskToken);
 
-        };
+    var attr: AWS.Swf.RecordMarkerDecisionAttributes = {
+      markerName: "NoActionFromThisDecision"
+    };
 
-        var params: AWS.Swf.RespondDecisionTaskCompletedRequest = {
-            taskToken: taskToken,
-            decisions: [decision]
+    var decision: AWS.Swf.Decision = {
+      decisionType: "RecordMarker",
+      recordMarkerDecisionAttributes: attr
+    };
 
-        };
+    var params: AWS.Swf.RespondDecisionTaskCompletedRequest = {
+      taskToken: taskToken,
+      decisions: [decision]
+    };
 
-        this.swf.client.respondDecisionTaskCompleted(params, function (err, data) {
-            callback(err, data);
+    var me = this;
 
+    this.swf.respondDecisionTaskCompleted(params, function (err, data) {
+
+      retryOnNetworkError(err, data,
+        function retry() {
+          me.respondRecordMarker(taskToken, callback);
+        },
+        function proceed(err2, data2) {
+          callback(err2, data2);
         });
 
+    });
 
-    }
-    respondCompleteWorkflowExecution(taskToken: string, callback: (err: any, data: any) => void ) {
-        
-        var decision: AWS.Swf.Decision = {
-            decisionType: "CompleteWorkflowExecution"
-        };
+  }
 
-        var params: AWS.Swf.RespondDecisionTaskCompletedRequest = {
-            taskToken:taskToken,
-            decisions: [decision]
+  respondCompleteWorkflowExecution(taskToken: string, callback: (err: any, data: any) => void) {
 
-        };
+    //debug.log("respondCompleteWorkflowExecution", taskToken);
 
-        this.swf.client.respondDecisionTaskCompleted(params, function (err, data) {
-            callback(err, data);
+    var decision: AWS.Swf.Decision = {
+      decisionType: "CompleteWorkflowExecution"
+    };
+
+    var params: AWS.Swf.RespondDecisionTaskCompletedRequest = {
+      taskToken: taskToken,
+      decisions: [decision]
+
+    };
+
+    var me = this;
+
+    this.swf.respondDecisionTaskCompleted(params, function (err, data) {
+
+      retryOnNetworkError(err, data,
+        function retry() {
+          me.respondCompleteWorkflowExecution(taskToken, callback);
+        },
+        function proceed(err2, data2) {
+          callback(err2, data2);
         });
 
-    }
+    });
 
-    respondFailWorkflowExecution(taskToken: string, reason: string, detail: string, callback: (err: any, data: any) => void) {
 
-        var attr: AWS.Swf.FailWorkflowExecutionDecisionAttributes = {
-            reason: reason,
-            details: detail
-        };
+  }
 
-        var decision: AWS.Swf.Decision = {
-            decisionType: "FailWorkflowExecution",
-            failWorkflowExecutionDecisionAttributes: attr
-        };
+  respondFailWorkflowExecution(taskToken: string, reason: string, detail: string, callback: (err: any, data: any) => void) {
 
-        var params: AWS.Swf.RespondDecisionTaskCompletedRequest = {
-            taskToken: taskToken,
-            decisions: [decision]
-        };
+    //debug.log("respondFailWorkflowExecution", taskToken);
 
-        this.swf.client.respondDecisionTaskCompleted(params, function (err, data) {
-            callback(err, data);
+    var attr: AWS.Swf.FailWorkflowExecutionDecisionAttributes = {
+      reason: reason,
+      details: detail
+    };
+
+    var decision: AWS.Swf.Decision = {
+      decisionType: "FailWorkflowExecution",
+      failWorkflowExecutionDecisionAttributes: attr
+    };
+
+    var params: AWS.Swf.RespondDecisionTaskCompletedRequest = {
+      taskToken: taskToken,
+      decisions: [decision]
+    };
+
+    var me = this;
+
+    this.swf.respondDecisionTaskCompleted(params, function (err, data) {
+
+      retryOnNetworkError(err, data,
+        function retry() {
+          me.respondFailWorkflowExecution(taskToken, reason, detail, callback);
+        },
+        function proceed(err2, data2) {
+          callback(err2, data2);
         });
-    }
 
-    public respondActivityTaskCanceled(params: AWS.Swf.RespondActivityTaskCanceledRequest, callback: (err: any, data: any) => void ) {
+    });
 
-        this.swf.client.respondActivityTaskCanceled(params, function (err, data) {
-            callback(err, data);
-        });
+
+  }
+
+  public respondActivityTaskCanceled(params: AWS.Swf.RespondActivityTaskCanceledRequest, callback: (err: any, data: any) => void) {
+
+    //debug.log("respondActivityTaskCanceled", params.taskToken);
+
+    this.swf.respondActivityTaskCanceled(params, function (err, data) {
+      callback(err, data);
+    });
+
+  }
+
+  public respondActivityTaskCompleted(taskToken: string, result: string, callback: (err: any, data: any) => void) {
+
+    //debug.log("respondActivityTaskCompleted", taskToken);
     
-    }
+    var params: AWS.Swf.RespondActivityTaskCompletedRequest = {
+      taskToken: taskToken,
+      result: result
+    };
 
-    public respondActivityTaskCompleted(taskToken: string, data: string, callback: (err: any, data: any) => void ) {
+    var me = this;
 
-        var params: AWS.Swf.RespondActivityTaskCompletedRequest = {
-            taskToken: taskToken,
-            result: data
-        };
-            
-        this.swf.client.respondActivityTaskCompleted(params, function (err, data) {
-            callback(err, data);
+    this.swf.respondActivityTaskCompleted(params, function (err, data) {
+
+      retryOnNetworkError(err, data,
+        function retry() {
+          me.respondActivityTaskCompleted(taskToken, result, callback);
+        },
+        function proceed(err2, data2) {
+          callback(err2, data2);
         });
 
-    }
+    });
 
-    public respondActivityTaskFailed(taskToken: string, errMessage: string, callback: (err: any, data: any) => void ) {
-        
-        var failedParams: AWS.Swf.RespondActivityTaskFailedRequest = {
-            taskToken: taskToken,
-            reason: errMessage
-        };
-        
-        this.swf.respondActivityTaskFailed(failedParams, function (err, data) {
-            debug.log("ERR:respondActivityTaskFailed ", err);
+  }
 
-        });
-    }
+  public respondActivityTaskFailed(taskToken: string, errMessage: string, callback: (err: Error, data: any) => void) {
 
-    public pollForDecisionTask(domain: string, taskList: string, callback) {
+    //debug.log("respondActivityTaskFailed", taskToken);
 
-        var request = {
-            domain: domain,
-            taskList: { name: taskList }
-        };
+    var failedParams: AWS.Swf.RespondActivityTaskFailedRequest = {
+      taskToken: taskToken,
+      reason: errMessage
+    };
 
+    var me = this;
 
-        this.swf.client.pollForDecisionTask(request, function (error, data) {
-            callback(error, data);
-        });
-    }
+    this.swf.respondActivityTaskFailed(failedParams, function (error, data) {
 
-    
-    public pollForActivityTask(domain: string, taskList: string, callback) {
-
-        var request = {
-            domain: domain,
-            taskList: { name: taskList }
-        };
-
-
-        this.swf.client.pollForActivityTask(request, function (error, data) {
-            callback(error, data);
-        });
-    }
-
-    public startWorkflowExecution(request: AWS.Swf.StartWorkflowExecutionRequest, callback: (err: Error) => void) {
-                
-        this.swf.client.startWorkflowExecution(request, function (error, data) {
-            monitor.log("[Workflow] starting", request.domain);
-
-            if (error == null) {
-
-            } else {
-                debug.log("startWorkflowExecution - error:", error);
-                callback(error);
-            }
+      retryOnNetworkError(error, data,
+        function retry() {
+          me.respondActivityTaskFailed(taskToken, errMessage, callback);
+        },
+        function proceed(err2, data2) {
+          callback(err2, data2);
         });
 
+    });
+
+
+    //this.swf.respondActivityTaskFailed(failedParams, function (err, data) {
+    //  //debug.log("ERR:respondActivityTaskFailed ", err);
+
+    //});
+  }
+
+  public pollForDecisionTask(domain: string, taskList: string, callback) {
+
+    //debug.log("pollForDecisionTask");
+
+    var request = {
+      domain: domain,
+      taskList: { name: taskList }
+    };
+
+    var me = this;
+
+    this.swf.pollForDecisionTask(request, function (error, data) {
+
+      retryOnNetworkError(error, data,
+        function retry() {
+          me.pollForDecisionTask(domain, taskList, callback);
+        },
+        function proceed(err2, data2) {
+          callback(err2, data2);
+        });
+
+
+    });
+  }
+
+
+  public pollForActivityTask(domain: string, taskList: string, callback) {
+
+    //debug.log("pollForActivityTask");
+
+    var request = {
+      domain: domain,
+      taskList: { name: taskList }
+    };
+
+    var me = this;
+
+    this.swf.pollForActivityTask(request, function (error, data) {
+
+      retryOnNetworkError(error, data,
+        function retry() {
+          me.pollForActivityTask(domain, taskList, callback);
+        },
+        function proceed(err2, data2) {
+          callback(err2, data2);
+        });
+
+    });
+
+  }
+
+  public startWorkflowExecution(request: AWS.Swf.StartWorkflowExecutionRequest, callback: (err: Error) => void) {
+
+
+    //debug.log("startWorkflowExecution", request.input);
+
+    var me = this;
+
+    this.swf.startWorkflowExecution(request, function (error, data) {
+
+      retryOnNetworkError(error, data,
+        function retry() {
+          me.startWorkflowExecution(request, callback);
+        },
+        function proceed(err2, data2) {
+          callback(err2);
+        });
+
+    });
+
+  }
+
+}
+
+function retryOnNetworkError(error: Error, data: any, retry: () => void, proceed: (err, data) => void) {
+
+  if (error != null) {
+
+    if (error.name == "NetworkingError") {
+      console.log("[easy-swf] networking error. Will retry in 30 seconds...");
+
+      setTimeout(function () {
+        retry();
+      }, 30000);
+
+
+      return;
     }
+
+  }
+
+  proceed(error, data);
 
 }

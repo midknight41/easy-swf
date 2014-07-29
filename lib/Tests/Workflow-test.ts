@@ -68,14 +68,12 @@ var testGroup = {
   "Can start a workflow that exists in config": function (test: nodeunit.Test): void {
 
     var name = "workflowName";
+    var version = "1";
+
     var options =
       {
         "domain": "myDomain",
-        "reference": "ref",
-        "workflowType": name,
-        "workflowTypeVersion": "1",
         "taskList": "mainList",
-        "activities": null
       };
 
     var swf = gently.stub("Interfaces", "ISwfDataAccess");
@@ -90,12 +88,12 @@ var testGroup = {
 
     gently.expect(swf, "startWorkflowExecution", function (request, callback) {
       test.notEqual(request.workflowId.length, 0, "uuid not set");
-      test.equal(request.workflowType.name, options.workflowType, "name not set");
-      test.equal(request.workflowType.version, options.workflowTypeVersion, "version not set");
+      test.equal(request.workflowType.name, name, "name not set");
+      test.equal(request.workflowType.version, version, "version not set");
       test.equal(request.domain, options.domain, "domain not set");
     });
 
-    client.startWorkflow(name, function (err) {
+    client.startWorkflow(name, version, null, function (err) {
 
     });
 
@@ -129,18 +127,7 @@ var testGroup = {
     ConstructorTest(test, options, config, swf);
 
     options.domain = "myDomain";
-    options.reference = null;
-    ConstructorTest(test, options, config, swf);
 
-    options.reference = "ref";
-    options.workflowType = null;
-    ConstructorTest(test, options, config, swf);
-
-    options.workflowType = name;
-    options.workflowTypeVersion = null;
-    ConstructorTest(test, options, config, swf);
-
-    options.workflowTypeVersion = "1";
     options.taskList = null;
     ConstructorTest(test, options, config, swf);
 
@@ -178,11 +165,7 @@ var testGroup = {
     var options =
       {
         "domain": "myDomain",
-        "reference": "ref",
-        "workflowType": name,
-        "workflowTypeVersion": "1",
         "taskList": "mainList",
-        "activities": null
       };
 
     var swf = gently.stub("Interfaces", "ISwfDataAccess");

@@ -13,6 +13,9 @@ export class ActivityHost {
   private swf: dal.ISwfDataAccess;
   private feedbackHandler: (err: Error, message: string) => void;
   private continuePolling: boolean;
+  private lastHeartbeat: number;
+  private heartId: number;
+  private whenStopped: (err: Error) => void;
 
   constructor(register: interfaces.IActivityRegister, domain: string, taskList: string, swf: dal.ISwfDataAccess) {
 
@@ -22,20 +25,19 @@ export class ActivityHost {
     this.taskList = taskList;
   }
 
-  public handleActivity(reference: string, activityCode?: any) {
-    //add this activity to a collection for execution later
+  public handleActivity(name: string, version: string, activityCode?: any) {
 
-    var container: ActivityCallbackContainer = new ActivityCallbackContainer();
+    var container: WorkflowCallbackContainer = new WorkflowCallbackContainer();
 
-    var activity = this.activityRegister.getActivityByRef(reference);
+    var activity = this.activityRegister.getActivity(name, version);
 
     if (activity == null) {
       //workflow is not configured properly.
-      throw new Error("A handler cannot be set up for activity '" + reference + "' as it is not in the workflow configuration.");
+      throw new Error("A handler cannot be set up for activity '" + name + "' as it is not in the workflow configuration.");
     }
 
     container.reference = activity.reference;
-    container.activityCode = activityCode;
+    container.code = activityCode;
     container.name = activity.name;
     container.taskList = activity.taskList;
     container.version = activity.version;
@@ -43,7 +45,7 @@ export class ActivityHost {
     this.activities.push(container);
   }
 
-  private getActivityContainer(activityName: string, version: string): ActivityCallbackContainer {
+  private getActivityContainer(activityName: string, version: string): WorkflowCallbackContainer {
 
     var activity = this.activityRegister.getActivity(activityName, version);
 
@@ -59,18 +61,64 @@ export class ActivityHost {
 
   }
 
+  private createHeartbeatWrapper(feedbackHandler: (err: Error, message: string) => void): any {
+
+    var me = this;
+    
+    return function (err: Error, message: string) {
+
+      var check: number = Date.now();
+      var threeMinutes = 180000;
+
+      feedbackHandler(err, message);
+
+      if (check - me.lastHeartbeat > threeMinutes) {
+
+        feedbackHandler(null, "[Activity] Heartbeat detected error! Restarting service.");
+
+        me.stop();
+        me.start();
+
+      }
+
+      this.lastHeartbeat = check;
+    }
+
+  }
+
+
   public listen(feedbackHandler?: (err: Error, message: string) => void) {
 
     if (feedbackHandler != null)
-      this.feedbackHandler = feedbackHandler;
+      this.feedbackHandler = this.createHeartbeatWrapper(feedbackHandler);
     else
-      this.feedbackHandler = function (err:Error, message: string) { };
+      this.feedbackHandler = this.createHeartbeatWrapper(function (err: Error, message: string) { });
 
-    this.BeginActivityPolling();
+    this.start();
+    
   }
 
-  public stop() {
+  private start() {
+    var me = this;
+
+    me.lastHeartbeat = Date.now();
+
+    me.heartId = setInterval(function () {
+
+      me.feedbackHandler(null, "[Activity] Heartbeat check");
+    }, 200000);
+
+    me.BeginActivityPolling();
+  }
+
+  public stop(callback?: (err: Error) => void) {
     this.feedbackHandler(null, "[Activity] stopped polling");
+
+    if (this.heartId != null) {
+      clearInterval(this.heartId);
+    }
+
+    this.whenStopped = callback;
     this.continuePolling = false;
   }
 
@@ -87,12 +135,14 @@ export class ActivityHost {
     me.feedbackHandler(null, "[Activity] looking for activities");
 
     me.swf.pollForActivityTask(domain, taskList, function (error, data) {
-      me.feedbackHandler(null, "[Activity] polling response");
 
       if (error != null) {
-        me.feedbackHandler(error, "pollForActivityTask Error:");
-        return;
+
+        me.feedbackHandler(error, "[Activity] unexpected polling response error - " + error.message);
+
       }
+
+      me.feedbackHandler(null, "[Activity] polling response");
 
       if (data != null && data.startedEventId > 0) {
         var token = data.taskToken;
@@ -103,22 +153,31 @@ export class ActivityHost {
         } else {
 
           me.feedbackHandler(null, "[Activity] executing " + data.activityType.name);
-          activity.activityCode(null, data.input, function (err?: Error, data2?: string) {
-            me.proceedAfterActivity(token, err, data2);
+
+          //this should pass the details about the activity instead of null here
+          activity.code(null, data.input, function next(err?: Error, data2?: string) {
+            me.proceedAfterActivity(data.activityType.name, data.activityType.version, token, err, data2);
           });
 
         }
 
+      } else {
+        me.feedbackHandler(null, "[Activity] nothing to do");
       }
+
       if (me.continuePolling == true) {
         me.doActivityPoll(me, domain, taskList);
+      } else {
+        if (me.whenStopped != null) {
+          me.whenStopped(null);
+        }
       }
 
     });
 
   }
 
-  private proceedAfterActivity(taskToken: string, err?: Error, data?: string) {
+  private proceedAfterActivity(activityName: string, activityVersion: string, taskToken: string, err?: Error, data?: string) {
 
     var me = this;
 
@@ -127,7 +186,11 @@ export class ActivityHost {
     if (err == null) {
 
       me.swf.respondActivityTaskCompleted(taskToken, data, function (err1, data1) {
-        if (err1 != null) me.feedbackHandler(err, "ERR:respondActivityTaskCompleted");
+        if (err1 != null) {
+          me.feedbackHandler(err1, "[Activity] error occurred when marking " + activityName + " as complete");
+        } else {
+          me.feedbackHandler(null, "[Activity] completed " + activityName);
+        }
       });
 
     } else {
@@ -135,7 +198,7 @@ export class ActivityHost {
       me.feedbackHandler(err, "[Activity] sending failure");
 
       me.swf.respondActivityTaskFailed(taskToken, err.message, function (err2, data2) {
-        if (err2 != null) me.feedbackHandler(err, "ERR:respondActivityTaskFailed");
+        if (err2 != null) me.feedbackHandler(err2, "ERR:respondActivityTaskFailed");
 
       });
     }
@@ -143,13 +206,13 @@ export class ActivityHost {
 
 }
 
-export class ActivityCallbackContainer implements interfaces.IActivity {
+export class WorkflowCallbackContainer implements interfaces.IActivity {
 
   public name: string;
   public version: string;
   public taskList: string;
   public reference: string;
-  public activityCode: (err: any, input: string, callback: (err: Error, data: any) => void) => void;
+  public code: (err: any, input: string, callback: (err: Error, data: any) => void) => void;
 }
 
 export class Activity implements interfaces.IActivity {

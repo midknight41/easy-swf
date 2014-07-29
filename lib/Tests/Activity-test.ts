@@ -126,11 +126,12 @@ var testGroup = {
     var swf = gently.stub("Interfaces", "ISwfDataAccess");
     var reg = gently.stub("ActivityRegister", "ActivityRegister");
 
-    gently.expect(reg, "getActivityByRef", function (reference) {
-      test.equal(reference, handler, "activityName not correct on byref");
+    gently.expect(reg, "getActivity", function (name, version) {
+      test.equal(name, handler, "activityName not correct");
+      test.equal(version, "1", "version not correct");
       return (activity2);
     });
-
+    
     gently.expect(swf, "pollForActivityTask", function (dom: string, list: string, callback) {
       test.equal(dom, domain);
       test.equal(list, taskList);
@@ -145,7 +146,7 @@ var testGroup = {
 
     var host = new acts.ActivityHost(reg, domain, taskList, swf);
 
-    host.handleActivity(handler, function (err, data, next) {
+    host.handleActivity(handler, "1", function (err, data, next) {
       test.equal(1, 0, "This handler should not get called");
     });
 
@@ -163,34 +164,6 @@ var testGroup = {
     test.done();
 
   },
-  "Throws an error when you define an activity handler in code but not in config": function (test: nodeunit.Test): void {
-
-    var domain = "myDomain";
-    var taskList = "myList";
-    var handler = "myUnhandledActivity";
-    
-    var swf = gently.stub("Interfaces", "ISwfDataAccess");
-    var reg = gently.stub("ActivityRegister", "ActivityRegister");
-
-    gently.expect(reg, "getActivityByRef", function (reference) {
-      test.equal(reference, handler, "activityName not correct on byref");
-      return (null);
-    });
-
-    var host = new acts.ActivityHost(reg, domain, taskList, swf);
-
-    try {
-      host.handleActivity(handler, function (err, data, next) {
-        test.equal(1, 0, "This handler should not get called");
-      });
-      
-    } catch(e) {
-
-    } 
-
-    test.done();
-
-  },
   "Handles good parameters passed from the next() function": function (test: nodeunit.Test): void {
 
     TestNextFunction(test, null, "result");
@@ -202,9 +175,6 @@ var testGroup = {
   "Handles an error passed from the next() function": function (test: nodeunit.Test): void {
 
     TestNextFunction(test, new Error("msg"), null);
-  },
-  "TODO: add tests for getActivityState + bad config + bad params": function (test: nodeunit.Test, activity: interfaces.IActivity, swfData) {
-    test.done();
   }
 
   
@@ -232,8 +202,9 @@ function TestNextFunction(test, inErr, result) {
   var swf = gently.stub("Interfaces", "ISwfDataAccess");
   var reg = gently.stub("ActivityRegister", "ActivityRegister");
 
-  gently.expect(reg, "getActivityByRef", function (reference) {
-    test.equal(reference, activity.reference, "activityName not correct on byref");
+  gently.expect(reg, "getActivity", function (name, version) {
+    test.equal(name, activityName, "activityName not correct");
+    test.equal(version, "1", "version not correct");
     return (activity);
   });
 
@@ -263,7 +234,7 @@ function TestNextFunction(test, inErr, result) {
 
   var host = new acts.ActivityHost(reg, domain, taskList, swf);
 
-  host.handleActivity(activityName, function (err, data, next) {
+  host.handleActivity(activityName, "1", function (err, data, next) {
     test.equal(err, null, "An error occurred");
     test.equal(swfData.input, data, "input was not correctly returned");
 
@@ -274,6 +245,7 @@ function TestNextFunction(test, inErr, result) {
 
   host.listen(function (err, message) {
 
+    
     //if (err != null) console.log("ERROR", err);
     //console.log(message);
 
@@ -294,8 +266,9 @@ function TestAnActivity(test: nodeunit.Test, activity: interfaces.IActivity, swf
   var reg = gently.stub("ActivityRegister", "ActivityRegister");
 
 
-  gently.expect(reg, "getActivityByRef", function (reference) {
-    test.equal(reference, activity.reference, "activityName not correct on byref");
+  gently.expect(reg, "getActivity", function (name, version) {
+    test.equal(name, activityName, "activityName not correct");
+    test.equal(version, "1", "version not correct");
     return (activity);
   });
 
@@ -313,7 +286,7 @@ function TestAnActivity(test: nodeunit.Test, activity: interfaces.IActivity, swf
 
   var host = new acts.ActivityHost(reg, domain, taskList, swf);
 
-  host.handleActivity(activityName, function (err, data, next) {
+  host.handleActivity(activityName, "1", function (err, data, next) {
     test.equal(err, null, "An error occurred");
     test.equal(swfData.input, data, "input was not correctly returned");
     host.stop();

@@ -14,6 +14,13 @@ export function invalidArgumentErrorTest(test: nodeunit.Test, fnc: () => void) {
   errorTest(test, errorType, fnc );
 }
 
+export function badConfigErrorTest(test: nodeunit.Test, fnc: () => void) {
+
+  var errorType = new errors.BadConfigError();
+  errorTest(test, errorType, fnc);
+}
+
+
 export function errorTest(test: nodeunit.Test, errorType: Error, fnc: () => void) {
 
   try {

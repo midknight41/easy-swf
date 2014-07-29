@@ -1,14 +1,12 @@
 /// <reference path="imports.d.ts" />
 
-//export var monitor = console;
-//export var debug = console;
-
 import AWS = require("aws-sdk");
 import a = require("./Activity");
 import d = require("./Decider");
 import e = require("./EventParser");
 import dal = require("./SwfDataAccess");
 import r = require("./ActivityRegister");
+import w = require("./WorkflowItemRegister");
 import interfaces = require("./Interfaces");
 import uuid = require("uuid");
 import errors = require("./CustomErrors");
@@ -40,10 +38,7 @@ export class WorkflowClient {
   validateOptions(workflow: interfaces.IOptions) {
     if (workflow == null) throw new errors.NullArgumentError("workflow");
     if (workflow.domain == null) throw new errors.InvalidArgumentError("domain is mandatory");
-    if (workflow.reference == null) throw new errors.InvalidArgumentError("reference is mandatory");
     if (workflow.taskList == null) throw new errors.InvalidArgumentError("taskList is mandatory");
-    if (workflow.workflowType == null) throw new errors.InvalidArgumentError("workflowType is mandatory");
-    if (workflow.workflowTypeVersion == null) throw new errors.InvalidArgumentError("workflowTypeVersion is mandatory");
   }
 
   validateConfig(awsConfig: any) {
@@ -70,21 +65,55 @@ export class WorkflowClient {
 
     var eventParser = new e.EventParser();
     var reg = new r.ActivityRegister(this.workflow);
-    var host = new d.DecisionHost(reg, this.workflow.domain, taskList, this.swf, eventParser);
+    var wiRegister = new w.WorkflowItemRegister();
+
+    var host = new d.DecisionHost(wiRegister, reg, this.workflow.domain, taskList, this.swf, eventParser);
 
     return host;
 
   }
 
-  startWorkflow(reference: string, callback: (err) => void) {
+  startWorkflowOld(reference: string, input: string, callback: (err) => void) {
+
+    if (reference == null || reference == "") throw new errors.NullArgumentError("reference is mandatory");
+
+    input = input == null ? input = "" : input;
 
     var request: AWS.Swf.StartWorkflowExecutionRequest = {
       domain: this.workflow.domain,
       workflowId: uuid.v4(),
+      input: input,
 
       workflowType: {
         name: this.workflow.workflowType,
         version: this.workflow.workflowTypeVersion
+      },
+
+      taskList: { name: this.workflow.taskList }
+
+    };
+
+    var me = this;
+
+    this.swf.startWorkflowExecution(request, callback);
+
+  }
+
+  startWorkflow(name: string, version:string, input: string, callback: (err) => void) {
+
+    if (name == null || name == "") throw new errors.NullArgumentError("name is mandatory");
+    if (version == null || version == "") throw new errors.NullArgumentError("version is mandatory");
+    
+    input = input == null ? input = "" : input;
+
+    var request: AWS.Swf.StartWorkflowExecutionRequest = {
+      domain: this.workflow.domain,
+      workflowId: uuid.v4(),
+      input: input,
+
+      workflowType: {
+        name: name,
+        version: version
       },
 
       taskList: { name: this.workflow.taskList }

@@ -17,28 +17,196 @@ var testGroup = {
   },
   "Can create a Decider Host": function (test: nodeunit.Test): void {
 
-    var domain = "myDomain";
-    var taskList = "myList";
+    var t = createHostData();
+    var host = new dec.DecisionHost(t.wiReg, t.reg, t.domain, t.taskList, t.swf, t.parser);
 
-    var swf = gently.stub("Interfaces", "ISwfDataAccess");
-    var reg = gently.stub("Activity", "ActivityRegister");
-    var parser = gently.stub("EventParser", "EventParser");
-
-    var host = new dec.DecisionHost(reg, domain, taskList, swf, parser);
-    
     test.notEqual(host, null, "nothing returned");
-    test.equal(host.taskList, taskList, "taskList not set");
+    test.equal(host.taskList, t.taskList, "taskList not set");
 
     test.done();
   },
-  "Throws an error when given bad constructors: TODO": function (test: nodeunit.Test): void {
+  "Throws an error when given bad constructors": function (test: nodeunit.Test): void {
+
+    var t = createHostData();
+    var host; 
+
+    help.nullErrorTest(test, function () {
+      host = new dec.DecisionHost(null, t.reg, t.domain, t.taskList, t.swf, t.parser);
+    });
+
+    help.nullErrorTest(test, function () {
+      host = new dec.DecisionHost(t.wiReg, null, t.domain, t.taskList, t.swf, t.parser);
+    });
+
+    help.nullErrorTest(test, function () {
+      host = new dec.DecisionHost(t.wiReg, t.reg, null, t.taskList, t.swf, t.parser);
+    });
+
+    help.nullErrorTest(test, function () {
+      host = new dec.DecisionHost(t.wiReg, t.reg, "", t.taskList, t.swf, t.parser);
+    });
+
+    help.nullErrorTest(test, function () {
+      host = new dec.DecisionHost(t.wiReg, t.reg, t.domain, null, t.swf, t.parser);
+    });
+
+    help.nullErrorTest(test, function () {
+      host = new dec.DecisionHost(t.wiReg, t.reg, t.domain, "", t.swf, t.parser);
+    });
+    
+    help.nullErrorTest(test, function () {
+      host = new dec.DecisionHost(t.wiReg, t.reg, t.domain, null, t.swf, t.parser);
+    });
+
+    help.nullErrorTest(test, function () {
+      host = new dec.DecisionHost(t.wiReg, t.reg, t.domain, t.taskList, null, t.parser);
+    });
+
+    help.nullErrorTest(test, function () {
+      host = new dec.DecisionHost(t.wiReg, t.reg, t.domain, t.taskList, t.swf, null);
+    });
+
     test.done();
 
-  }
+  },
+  "Can register a workflow decider": function (test: nodeunit.Test): void {
 
+
+    var t = createHostData();
+
+    var host = new dec.DecisionHost(t.wiReg, t.reg, t.domain, t.taskList, t.swf, t.parser);
+
+    var handler = function (err, context) {
+
+    }
+
+    gently.expect(t.wiReg, "addItem", function (reference: string, name: string, version: string, taskList: string, callback: any) {
+
+      test.equal(name, t.name);
+      test.equal(version, t.version);
+      test.equal(reference, t.reference);
+      test.equal(taskList, t.taskList);
+      test.equal(callback, handler);
+
+    });
+
+    host.handleWorkflow(t.name, t.version, handler);
+
+    test.done();
+  },
+  "parameters cannot be null for handleWorkflow": function (test: nodeunit.Test): void {
+
+    var t = createHostData();
+
+    var host = new dec.DecisionHost(t.wiReg, t.reg, t.domain, t.taskList, t.swf, t.parser);
+
+    var handler = function (err, context) {
+
+    }
+
+    help.nullErrorTest(test, function () {
+      host.handleWorkflow(null, t.version, handler);
+    });
+
+    help.nullErrorTest(test, function () {
+      host.handleWorkflow("", t.version, handler);
+    });
+
+    help.nullErrorTest(test, function () {
+      host.handleWorkflow(t.name, null, handler);
+    });
+
+    help.nullErrorTest(test, function () {
+      host.handleWorkflow(t.name, "", handler);
+    });
+
+    help.nullErrorTest(test, function () {
+      host.handleWorkflow(t.name, t.version, null);
+    });
+
+
+    test.done();
+
+  },
+  "Can receive an empty polling response": function (test: nodeunit.Test): void {
+
+
+    var t = createHostData();
+
+    var host = new dec.DecisionHost(t.wiReg, t.reg, t.domain, t.taskList, t.swf, t.parser);
+
+    var handler = function (err, context) {
+
+    }
+
+    gently.expect(t.wiReg, "addItem", function (reference: string, name: string, version: string, taskList: string, callback: any) {
+
+    });
+
+    gently.expect(t.swf, "pollForDecisionTask", function (domain, taskList, callback: (error: Error, data) => void) {
+      test.equal(domain, t.domain);
+      test.equal(taskList, t.taskList);
+
+      callback(null, null);
+
+    });
+
+    //gently.expect(t.wiReg, "getItemByRef", function (reference: string) {
+    //  test.equal(reference, t.reference);
+
+    //  return {};
+    //});
+
+    gently.expect(t.swf, "pollForDecisionTask", function (domain, taskList, callback: (error: Error, data) => void) {
+
+      
+      host.stop(function (err) {
+        test.equal(err, null);
+
+      });
+      
+      callback(null, null);
+
+
+    });
+
+    host.handleWorkflow(t.name, t.version, handler);
+
+    host.listen();
+
+    test.done();
+  }
 
 };
 
+function createHostData() {
+
+  var domain = "myDomain";
+  var taskList = "myList";
+
+  var swf = gently.stub("Interfaces", "ISwfDataAccess");
+  var reg = gently.stub("Activity", "ActivityRegister");
+  var parser = gently.stub("EventParser", "EventParser");
+  var wiReg = gently.stub("WorkflowItemRegister", "WorkflowItemRegister");
+
+  var name = "TestWorkflow";
+  var version = "1";
+  var reference = name + "(" + version + ")";
+
+  return {
+    domain: domain,
+    taskList: taskList,
+    swf: swf,
+    reg: reg,
+    parser: parser,
+    wiReg: wiReg,
+    name: name,
+    version: version,
+    reference: reference
+  }
+
+
+}
 
 var testGroup2 = {
   setUp: function (callback: nodeunit.ICallbackFunction): void {
@@ -54,7 +222,7 @@ var testGroup2 = {
     var swf = gently.stub("Interfaces", "ISwfDataAccess");
     var reg = gently.stub("Activity", "ActivityRegister");
     var parser = gently.stub("EventParser", "EventParser");
-    var state = {events: []};
+    var state = { events: [] };
     var activity: interfaces.IActivity = gently.stub("Activity", "Activity");
 
     activity.name = "test";
@@ -66,6 +234,17 @@ var testGroup2 = {
     gently.expect(parser, "extractActivities", function (events) {
       return ([activity]);
     });
+
+    gently.expect(parser, "extractWorkflowExecutionData", function (events) {
+      var data: interfaces.IWorkflowExecutionData = {
+        name: "name",
+        version: "version",
+        input: "input"
+      };
+
+      return (data);
+    });
+
 
     var context = new dec.DecisionContext(taskList, reg, parser, swf, null, state);
 
@@ -113,6 +292,16 @@ var testGroup2 = {
       return ([t.activity]);
     });
 
+    gently.expect(t.parser, "extractWorkflowExecutionData", function (events) {
+      var data: interfaces.IWorkflowExecutionData = {
+        name: "name",
+        version: "version",
+        input: "input"
+      };
+
+      return (data);
+    });
+
     gently.expect(t.swf, "respondRecordMarker", function (taskToken: string, callback: (err: any, data: any) => void) {
 
       test.equal(taskToken, t.state.taskToken, "task token not correctly set");
@@ -144,6 +333,16 @@ var testGroup2 = {
       return ([t.activity]);
     });
 
+    gently.expect(t.parser, "extractWorkflowExecutionData", function (events) {
+      var data: interfaces.IWorkflowExecutionData = {
+        name: "name",
+        version: "version",
+        input: "input"
+      };
+
+      return (data);
+    });
+
     gently.expect(t.reg, "getActivityByRef", function (events) {
       return (t.activity);
     });
@@ -166,6 +365,16 @@ var testGroup2 = {
       return ([t.activity]);
     });
 
+    gently.expect(t.parser, "extractWorkflowExecutionData", function (events) {
+      var data: interfaces.IWorkflowExecutionData = {
+        name: "name",
+        version: "version",
+        input: "input"
+      };
+
+      return (data);
+    });
+
     gently.expect(t.swf, "respondFailWorkflowExecution", function (taskToken, message, message2, callback) {
       test.equal(taskToken, t.state.taskToken, "taskToken not properly set");
       test.equal(message, errorMsg, "wrong error message returned");
@@ -177,7 +386,7 @@ var testGroup2 = {
 
     context.failWorkflow(new Error(errorMsg));
 
-    
+
 
     test.done();
   },
@@ -187,6 +396,16 @@ var testGroup2 = {
 
     gently.expect(t.parser, "extractActivities", function (events) {
       return ([t.activity]);
+    });
+
+    gently.expect(t.parser, "extractWorkflowExecutionData", function (events) {
+      var data: interfaces.IWorkflowExecutionData = {
+        name: "name",
+        version: "version",
+        input: "input"
+      };
+
+      return (data);
     });
 
     gently.expect(t.swf, "respondRecordMarker", function (taskToken: string, callback: (err: any, data: any) => void) {
@@ -208,6 +427,16 @@ var testGroup2 = {
       return ([t.activity]);
     });
 
+    gently.expect(t.parser, "extractWorkflowExecutionData", function (events) {
+      var data: interfaces.IWorkflowExecutionData = {
+        name: "name",
+        version: "version",
+        input: "input"
+      };
+
+      return (data);
+    });
+
     gently.expect(t.swf, "respondCompleteWorkflowExecution", function (taskToken: string, callback: (err: any, data: any) => void) {
 
       test.equal(taskToken, t.state.taskToken, "task token not correctly set");
@@ -225,6 +454,16 @@ var testGroup2 = {
 
     gently.expect(t.parser, "extractActivities", function (events) {
       return ([t.activity]);
+    });
+
+    gently.expect(t.parser, "extractWorkflowExecutionData", function (events) {
+      var data: interfaces.IWorkflowExecutionData = {
+        name: "name",
+        version: "version",
+        input: "input"
+      };
+
+      return (data);
     });
 
     gently.expect(t.swf, "respondScheduleActivityTask", function (taskToken: string, decisions, callback: (err: any, data: any) => void) {
@@ -252,6 +491,16 @@ var testGroup2 = {
 
     gently.expect(t.parser, "extractActivities", function (events) {
       return ([t.activity]);
+    });
+
+    gently.expect(t.parser, "extractWorkflowExecutionData", function (events) {
+      var data: interfaces.IWorkflowExecutionData = {
+        name: "name",
+        version: "version",
+        input: "input"
+      };
+
+      return (data);
     });
 
     gently.expect(t.swf, "respondScheduleActivityTask", function (taskToken: string, decisions, callback: (err: any, data: any) => void) {
@@ -285,6 +534,17 @@ var testGroup2 = {
     gently.expect(t.parser, "extractActivities", function (events) {
       return ([t.activity, act2]);
     });
+
+    gently.expect(t.parser, "extractWorkflowExecutionData", function (events) {
+      var data: interfaces.IWorkflowExecutionData = {
+        name: "name",
+        version: "version",
+        input: "input"
+      };
+
+      return (data);
+    });
+
 
     gently.expect(t.swf, "respondScheduleActivityTask", function (taskToken: string, decisions, callback: (err: any, data: any) => void) {
 
@@ -322,6 +582,16 @@ var testGroup2 = {
       return ([t.activity]);
     });
 
+    gently.expect(t.parser, "extractWorkflowExecutionData", function (events) {
+      var data: interfaces.IWorkflowExecutionData = {
+        name: "name",
+        version: "version",
+        input: "input"
+      };
+
+      return (data);
+    });
+
     var called = false;
 
     var fnc = function (err, message) {
@@ -334,6 +604,131 @@ var testGroup2 = {
     context.doActivity(null, input);
 
     test.equal(called, true, "feedbackHandler was not called");
+
+    test.done();
+  },
+  "add tests for getActivityState with good params": function (test: nodeunit.Test) {
+
+    var t = basicDCSetup();
+
+    gently.expect(t.parser, "extractActivities", function (events) {
+      return ([t.activity]);
+    });
+
+    gently.expect(t.parser, "extractWorkflowExecutionData", function (events) {
+      var data: interfaces.IWorkflowExecutionData = {
+        name: "name",
+        version: "version",
+        input: "input"
+      };
+
+      return (data);
+    });
+
+    gently.expect(t.reg, "getActivityByRef", function (events) {
+      return (t.activity);
+    });
+
+    var context = new dec.DecisionContext(t.taskList, t.reg, t.parser, t.swf, null, t.state);
+
+    var a = context.getActivityState(t.activity.reference);
+
+    test.deepEqual(a, t.activity, "the expected activity was not returned.");
+
+
+    test.done();
+  },
+  "add tests for getActivityState with bad params": function (test: nodeunit.Test) {
+
+    var t = basicDCSetup();
+
+    gently.expect(t.parser, "extractActivities", function (events) {
+      return ([t.activity]);
+    });
+
+    gently.expect(t.parser, "extractWorkflowExecutionData", function (events) {
+      var data: interfaces.IWorkflowExecutionData = {
+        name: "name",
+        version: "version",
+        input: "input"
+      };
+
+      return (data);
+    });
+
+    var context = new dec.DecisionContext(t.taskList, t.reg, t.parser, t.swf, null, t.state);
+
+    help.nullErrorTest(test, function () {
+      context.getActivityState(null);
+
+    });
+
+    test.done();
+  },
+  "add tests for getActivityState with bad config": function (test: nodeunit.Test) {
+
+    var t = basicDCSetup();
+
+    gently.expect(t.parser, "extractActivities", function (events) {
+      return ([t.activity]);
+    });
+
+    gently.expect(t.parser, "extractWorkflowExecutionData", function (events) {
+      var data: interfaces.IWorkflowExecutionData = {
+        name: "name",
+        version: "version",
+        input: "input"
+      };
+
+      return (data);
+    });
+
+    gently.expect(t.reg, "getActivityByRef", function (events) {
+      return (null);
+    });
+
+    var context = new dec.DecisionContext(t.taskList, t.reg, t.parser, t.swf, null, t.state);
+
+    help.badConfigErrorTest(test, function () {
+      context.getActivityState(t.activity.reference);
+    });
+
+    test.done();
+  },
+  "add tests for getActivityState when no matching event data exists": function (test: nodeunit.Test) {
+
+    var t = basicDCSetup();
+
+    var anotherActivity: interfaces.IActivity = {
+      name: "other",
+      reference: "other",
+      version: "1",
+      taskList: "mainList"
+    }
+
+    gently.expect(t.parser, "extractActivities", function (events) {
+      return ([anotherActivity]);
+    });
+
+    gently.expect(t.parser, "extractWorkflowExecutionData", function (events) {
+      var data: interfaces.IWorkflowExecutionData = {
+        name: "name",
+        version: "version",
+        input: "input"
+      };
+
+      return (data);
+    });
+
+    gently.expect(t.reg, "getActivityByRef", function (events) {
+      return (t.activity);
+    });
+
+    var context = new dec.DecisionContext(t.taskList, t.reg, t.parser, t.swf, null, t.state);
+
+    var a = context.getActivityState(t.activity.reference);
+
+    test.equal(a.name, t.activity.name, "did not return the correct activity");
 
     test.done();
   }
@@ -365,5 +760,5 @@ function basicDCSetup() {
 
 }
 
-exports.deciderTests = testGroup; 
+exports.deciderTests = testGroup;
 exports.decisionContextTests = testGroup2; 
