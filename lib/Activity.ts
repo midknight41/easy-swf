@@ -76,8 +76,10 @@ export class ActivityHost {
 
         feedbackHandler(null, "[Activity] Heartbeat detected error! Restarting service.");
 
-        me.stop();
-        me.start();
+        //me.stop();
+        //me.start();
+
+        throw new Error("Heartbeat failed! SWF has become unresponsive.");
 
       }
 

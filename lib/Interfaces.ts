@@ -51,9 +51,9 @@ export interface IDecisionContext {
   doActivity(activity: IActivity, data?: string);
   //doActivityByName(activityName: string, version: string, taskList: string, data?: string);
   getMatchingActivities(reference: string): IActivity[];
-  getFunction(activityRef: string): any;
-  getActivityState(reference: string): IActivity;
+  getFunction(name: string, version: string): any;
+  getActivityState(name: string, version: string): IActivity;
   failWorkflow(err: Error);
-  allDone();
+  completeWorkflow();
 
 }

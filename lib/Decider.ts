@@ -85,25 +85,28 @@ export class DecisionHost {
   private createHeartbeatWrapper(feedbackHandler: (err: Error, message: string, context: DecisionContext) => void): any {
 
     var me = this;
-    
+
     return function (err: Error, message: string, context: DecisionContext) {
 
       var check: number = Date.now();
       var threeMinutes = 180000;
 
       feedbackHandler(err, message, context);
-      
+
       if (check - me.lastHeartbeat > threeMinutes) {
 
         feedbackHandler(null, "[Decider] Heartbeat detected error! Restarting service.", context);
 
-        me.stop();
-        me.start();
+        //me.stop();
+        //me.start();
+
+        //Fatal error! Crash and let forever clean up...
+        throw new Error("Heartbeat failed! SWF has become unresponsive.");
 
       }
 
       this.lastHeartbeat = check;
-    }
+    };
 
   }
 
@@ -170,6 +173,7 @@ export class DecisionContext implements interfaces.IDecisionContext {
   public state: AWS.Swf.DecisionTask;
   private swf: DataAccess.ISwfDataAccess;
   private taskToken: string;
+  private taskList: string;
   public activities: interfaces.IActivity[] = [];
   public workflowInput: string;
   public workflowReference: string;
@@ -186,13 +190,13 @@ export class DecisionContext implements interfaces.IDecisionContext {
     if (state == null) throw new errors.NullArgumentError("state cannot be null");
     if (eventParser == null) throw new errors.NullArgumentError("eventParser cannot be null");
 
+    this.taskList = taskList;
     this.activityRegister = register;
     this.swf = swf;
     this.state = state;
     this.taskToken = this.state.taskToken;
     this.feedbackHandler = feedbackHandler != null ? feedbackHandler : function (err: Error, message: string) { };
     this.activities = eventParser.extractActivities(state.events);
-//    this.workflowInput = eventParser.extractWorkflowInput(state.events);
     var data = eventParser.extractWorkflowExecutionData(state.events);
 
     this.workflowInput = data.input;
@@ -221,7 +225,7 @@ export class DecisionContext implements interfaces.IDecisionContext {
     });
   }
 
-  public allDone() {
+  public completeWorkflow() {
     //finish workflow execution
     var me = this;
 
@@ -255,18 +259,28 @@ export class DecisionContext implements interfaces.IDecisionContext {
     return (activities);
   }
 
-  public getActivityState(reference: string): interfaces.IActivity {
+  public getActivityState(name: string, version: string): interfaces.IActivity {
 
-    if (reference == null) throw new errors.NullArgumentError("reference");
+    if (name == null) throw new errors.NullArgumentError("name");
+    if (version == null) throw new errors.NullArgumentError("version");
 
-    var activityFromConfig = this.activityRegister.getActivityByRef(reference);
+    var reference = name + "(" + version + ")";
+
+    var activityFromConfig = this.activityRegister.getActivity(name, version);
     
     if (activityFromConfig == null) throw new errors.BadConfigError("activity with reference " + reference + " does not exist in config");
 
-    var activity = this.getFirstActivity(activityFromConfig.name, activityFromConfig.version);
+    var activity = this.getFirstActivity(name, version);
 
     if (activity == null) {
-      activity = activityFromConfig;
+      var activityStub: interfaces.IActivity = {
+        name: name,
+        version: version,
+        taskList: this.taskList,
+        reference: name + "(" + version + ")"
+      };
+
+      activity = activityStub;
     }
 
     activity.reference = reference;
@@ -274,12 +288,13 @@ export class DecisionContext implements interfaces.IDecisionContext {
     return activity;
   }
 
-  public getFunction(activityRef: string): any {
+  public getFunction(name: string, version: string): any {
 
     var me = this;
-    var activity = this.getActivityState(activityRef);
+    var activity = this.getActivityState(name, version);
 
     return new wrapper.FunctionWrapper(activity, me).getFunction();
+
   }
 
   public doActivity(activity: interfaces.IActivity, data?: string) {
@@ -326,6 +341,8 @@ export class DecisionContext implements interfaces.IDecisionContext {
         taskList: { name: taskList }
       }
     };
+
+    console.log(decision);
 
     me.decisions.push(decision);
 

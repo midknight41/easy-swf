@@ -205,7 +205,7 @@ function CreateClient() {
       "workflowType": "myName",
       "workflowTypeVersion": "1",
       "taskList": "mainList",
-      "activities": null
+      "activities": []
     };
 
   var swf = gently.stub("Interfaces", "ISwfDataAccess");

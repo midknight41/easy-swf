@@ -7,6 +7,7 @@ export class ActivityRegister implements interfaces.IActivityRegister {
   constructor(workflow: interfaces.IOptions) {
 
     if (workflow == null) throw new errors.NullArgumentError("workflow cannot be null");
+    if (workflow.activities == null) throw new errors.NullArgumentError("workflow.activities cannot be null");
 
     this.workflow = workflow;
   }

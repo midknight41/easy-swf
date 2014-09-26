@@ -343,14 +343,14 @@ var testGroup2 = {
       return (data);
     });
 
-    gently.expect(t.reg, "getActivityByRef", function (events) {
+    gently.expect(t.reg, "getActivity", function (events) {
       return (t.activity);
     });
 
 
     var context = new dec.DecisionContext(t.taskList, t.reg, t.parser, t.swf, null, t.state);
-
-    var fnc = context.getFunction(t.activity.reference);
+    
+    var fnc = context.getFunction(t.activity.name, t.activity.version);
     test.notEqual(fnc, null, "did not return a function");
 
     test.done();
@@ -445,7 +445,7 @@ var testGroup2 = {
     });
 
     var context = new dec.DecisionContext(t.taskList, t.reg, t.parser, t.swf, null, t.state);
-    context.allDone();
+    context.completeWorkflow();
 
     test.done();
   },
@@ -607,7 +607,7 @@ var testGroup2 = {
 
     test.done();
   },
-  "add tests for getActivityState with good params": function (test: nodeunit.Test) {
+  "Can call getActivityState with good params": function (test: nodeunit.Test) {
 
     var t = basicDCSetup();
 
@@ -625,20 +625,22 @@ var testGroup2 = {
       return (data);
     });
 
-    gently.expect(t.reg, "getActivityByRef", function (events) {
+    gently.expect(t.reg, "getActivity", function (name, version) {
+      test.equal(name, t.activity.name);
+      test.equal(version, t.activity.version);
       return (t.activity);
     });
 
     var context = new dec.DecisionContext(t.taskList, t.reg, t.parser, t.swf, null, t.state);
-
-    var a = context.getActivityState(t.activity.reference);
+    
+    var a = context.getActivityState(t.activity.name, t.activity.version);
 
     test.deepEqual(a, t.activity, "the expected activity was not returned.");
 
 
     test.done();
   },
-  "add tests for getActivityState with bad params": function (test: nodeunit.Test) {
+  "Throws an error when calling getActivityState with bad params": function (test: nodeunit.Test) {
 
     var t = basicDCSetup();
 
@@ -659,13 +661,13 @@ var testGroup2 = {
     var context = new dec.DecisionContext(t.taskList, t.reg, t.parser, t.swf, null, t.state);
 
     help.nullErrorTest(test, function () {
-      context.getActivityState(null);
+      context.getActivityState(null, null);
 
     });
 
     test.done();
   },
-  "add tests for getActivityState with bad config": function (test: nodeunit.Test) {
+  "Throws an error when calling getActivityState with bad config": function (test: nodeunit.Test) {
 
     var t = basicDCSetup();
 
@@ -683,14 +685,16 @@ var testGroup2 = {
       return (data);
     });
 
-    gently.expect(t.reg, "getActivityByRef", function (events) {
+    gently.expect(t.reg, "getActivity", function (name, version) {
+      test.equal(name, t.activity.name);
+      test.equal(version, t.activity.version);
       return (null);
     });
 
     var context = new dec.DecisionContext(t.taskList, t.reg, t.parser, t.swf, null, t.state);
 
     help.badConfigErrorTest(test, function () {
-      context.getActivityState(t.activity.reference);
+      context.getActivityState(t.activity.name, t.activity.version);
     });
 
     test.done();
@@ -720,13 +724,15 @@ var testGroup2 = {
       return (data);
     });
 
-    gently.expect(t.reg, "getActivityByRef", function (events) {
+    gently.expect(t.reg, "getActivity", function (name, version) {
+      test.equal(name, t.activity.name);
+      test.equal(version, t.activity.version);
       return (t.activity);
     });
 
     var context = new dec.DecisionContext(t.taskList, t.reg, t.parser, t.swf, null, t.state);
 
-    var a = context.getActivityState(t.activity.reference);
+    var a = context.getActivityState(t.activity.name, t.activity.version);
 
     test.equal(a.name, t.activity.name, "did not return the correct activity");
 
