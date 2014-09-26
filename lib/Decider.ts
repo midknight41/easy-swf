@@ -342,8 +342,6 @@ export class DecisionContext implements interfaces.IDecisionContext {
       }
     };
 
-    console.log(decision);
-
     me.decisions.push(decision);
 
     process.nextTick(function () {

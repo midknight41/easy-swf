@@ -154,10 +154,6 @@ var testGroup = {
 
       if (err != null) {
         host.stop();
-        //  console.log(message);
-        //  console.log(err);
-      } else {
-        //  console.log(message);
       }
     });
 

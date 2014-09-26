@@ -34,7 +34,6 @@ export class FunctionWrapper {
     if (me.activity.hasBeenScheduled) return me.scheduled;
 
     return function scheduleTask(input: string, clientMethod: (err, data) => void) {
-      console.log(me.activity);
 
       me.context.doActivity(me.activity, input);
 
