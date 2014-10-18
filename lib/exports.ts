@@ -122,6 +122,11 @@ declare module "easy-swf" {
     code?: any;
   }
 
+  export interface IActivityState extends IWorkflowItem {
+    workflowId?: string;
+    input?: string;
+  }
+
   export interface IActivity extends IWorkflowItem {
     result?: string;
     input?: string;

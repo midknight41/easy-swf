@@ -35,9 +35,11 @@ var testGroup = {
 
     var taskList = "myList";
     var activityName = "myActivity";
+    var workflowId = "abc123";
 
     var activity = gently.stub("Activity", "Activity");
 
+    activity.workflowId = workflowId;
     activity.reference = activityName;
     activity.name = activityName;
     activity.taskList = taskList;
@@ -47,6 +49,7 @@ var testGroup = {
       startedEventId: 1,
       taskToken: "token",
       activityType: { name: activityName, version: "1" },
+      workflowExecution: { workflowId: workflowId },
       input: "input"
     };
 
@@ -57,9 +60,11 @@ var testGroup = {
 
     var taskList = "myList";
     var activityName = "myActivity";
+    var workflowId = "abc123";
 
     var activity = gently.stub("Activity", "Activity");
 
+    activity.workflowId = workflowId;
     activity.reference = activityName;
     activity.name = activityName;
     activity.taskList = taskList;
@@ -69,6 +74,7 @@ var testGroup = {
       startedEventId: 1,
       taskToken: "token",
       activityType: { name: activityName, version: "1" },
+      workflowExecution: { workflowId: workflowId },
       input: ""
     };
 
@@ -78,9 +84,11 @@ var testGroup = {
 
     var taskList = "myList";
     var activityName = "myActivity";
+    var workflowId = "abc123";
 
     var activity = gently.stub("Activity", "Activity");
 
+    activity.workflowId = workflowId;
     activity.reference = activityName;
     activity.name = activityName;
     activity.taskList = taskList;
@@ -90,6 +98,7 @@ var testGroup = {
       startedEventId: 1,
       taskToken: "token",
       activityType: { name: activityName, version: "1" },
+      workflowExecution: { workflowId: workflowId},
       input: null
     };
 

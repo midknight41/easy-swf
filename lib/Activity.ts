@@ -148,17 +148,25 @@ export class ActivityHost {
 
       if (data != null && data.startedEventId > 0) {
         var token = data.taskToken;
-        var activity = me.getActivityContainer(data.activityType.name, data.activityType.version);
+        var container = me.getActivityContainer(data.activityType.name, data.activityType.version);
 
-        if (activity == null) {
+        if (container == null) {
           me.feedbackHandler(new Error("There is no activity handler associated with this activity."), "[Activity] executing " + data.activityType.name);
         } else {
 
-          me.feedbackHandler(null, "[Activity] executing " + data.activityType.name);
+          me.feedbackHandler(null, "[Activity] executing " + data.activityType.name + " for " + data.workflowExecution.workflowId);
 
-          //this should pass the details about the activity instead of null here
-          activity.code(null, data.input, function next(err?: Error, data2?: string) {
-            me.proceedAfterActivity(data.activityType.name, data.activityType.version, token, err, data2);
+          var activityState: interfaces.IActivityState = {
+            workflowId: data.workflowExecution.workflowId,
+            input: data.input,
+            name: container.name,
+            reference: container.reference,
+            version: container.version,
+            taskList: container.taskList
+          };
+
+          container.code(activityState, data.input, function next(err?: Error, result?: string) {
+            me.proceedAfterActivity(data.activityType.name, data.activityType.version, token, err, result);
           });
 
         }
@@ -209,12 +217,12 @@ export class ActivityHost {
 }
 
 export class WorkflowCallbackContainer implements interfaces.IActivity {
-
+  public workflowId: string;
   public name: string;
   public version: string;
   public taskList: string;
   public reference: string;
-  public code: (err: any, input: string, callback: (err: Error, data: any) => void) => void;
+  public code: (activity: interfaces.IActivityState, input: string, callback: (err: Error, data: any) => void) => void;
 }
 
 export class Activity implements interfaces.IActivity {

@@ -6,7 +6,13 @@ export interface IWorkflowItem {
   code?: any;
 }
 
+export interface IActivityState extends IWorkflowItem {
+  workflowId?: string;
+  input?: string;
+}
+
 export interface IActivity extends IWorkflowItem {
+  workflowId?: string;
   result?: string;
   input?: string;
   hasStarted?: boolean;
