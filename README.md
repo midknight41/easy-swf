@@ -25,7 +25,7 @@ To avoid having to put version numbers and task list names into the code (which 
 		"workflowTypeVersion" : "1",
         "taskList": "taskList",
         "activities": [
-            { 
+            {
                 "reference": "taskOne",
                 "name": "taskOne",
                 "version": "1",
@@ -68,15 +68,15 @@ var client = new easy.WorkflowClient(workflow, awsConfig);
 ```
 var acts = client.createActivityHost("taskList");
 
-acts.handleActivity("taskOne", function (err, data, next) {
+acts.handleActivity("taskOne", "1", function (err, data, next) {
   next(null, "one");
 });
 
-acts.handleActivity("taskTwo", function (err, data, next) {
+acts.handleActivity("taskTwo", "1", function (err, data, next) {
   next(null, data + " two");
 });
 
-acts.handleActivity("taskThree", function (err, data, next) {
+acts.handleActivity("taskThree", "1", function (err, data, next) {
   next(null, data + " three");
 });
 
@@ -96,7 +96,7 @@ acts.listen(function (err: Error, message: string) {
 
 var decider = client.createDeciderHost("taskList");
 
-decider.handleDecision(function decisionLogic(err, context) {
+decider.handleWorkflow("example1", "1", function decisionLogic(err, context) {
 
   var taskOne = context.getFunction("taskOne");
   var taskTwo = context.getFunction("taskTwo");
@@ -114,7 +114,7 @@ decider.handleDecision(function decisionLogic(err, context) {
         if (finalErr != null) { context.failWorkflow(finalErr); return; }
 
         console.log(finalData);
-        context.allDone();
+        context.completeWorkflow();
       });
 
     });
@@ -142,7 +142,7 @@ decider.listen(function (err, message, context) {
 
 ##How to start a workflow
 ```
-client.startWorkflow("example1", function whenDone(err) {
+client.startWorkflow("example1", "1", function whenDone(err) {
 
 });
 
