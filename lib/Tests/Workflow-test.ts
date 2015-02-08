@@ -1,5 +1,3 @@
-///<reference path="../imports.d.ts"/>
-
 import workflow = require("../Workflow");
 import interfaces = require("../Interfaces");
 import errors = require("../CustomErrors");
@@ -35,14 +33,14 @@ var testGroup = {
       var act1 = client.createActivityHost(null);
       test.equal(1, 0, "taskList cannot be null");
     } catch (e) {
-      test.equal(e.name, new errors.NullArgumentError().name, "Wrong error returned");
+      test.equal(e.name, new errors.NullOrEmptyArgumentError().name, "Wrong error returned");
     }
 
     try {
       var act2 = client.createActivityHost("");
       test.equal(1, 0, "taskList cannot be an empty string");
     } catch (e) {
-      test.equal(e.name, new errors.NullArgumentError().name, "Wrong error returned");
+      test.equal(e.name, new errors.NullOrEmptyArgumentError().name, "Wrong error returned");
     }
 
     test.done();
@@ -54,14 +52,14 @@ var testGroup = {
       var dec1 = client.createDeciderHost(null);
       test.equal(1, 0, "taskList cannot be null");
     } catch (e) {
-      test.equal(e.name, new errors.NullArgumentError().name, "Wrong error returned");
+      test.equal(e.name, new errors.NullOrEmptyArgumentError().name, "Wrong error returned");
     }
 
     try {
       var dec2 = client.createDeciderHost("");
       test.equal(1, 0, "taskList cannot be empty string");
     } catch (e) {
-      test.equal(e.name, new errors.NullArgumentError().name, "Wrong error returned");
+      test.equal(e.name, new errors.NullOrEmptyArgumentError().name, "Wrong error returned");
     }
     test.done();
   },
@@ -121,7 +119,7 @@ var testGroup = {
         "activities": null
       };
 
-    ConstructorTest(test, null, config, swf, new errors.NullArgumentError("msg"));
+    ConstructorTest(test, null, config, swf, new errors.NullOrEmptyArgumentError("msg"));
 
     options.domain = null;
     ConstructorTest(test, options, config, swf);
@@ -176,7 +174,7 @@ var testGroup = {
       "region": "eu-west-1"
     };
 
-    ConstructorTest(test, options, null, swf, new errors.NullArgumentError("msg"));    
+    ConstructorTest(test, options, null, swf, new errors.NullOrEmptyArgumentError("msg"));    
 
     test.done();
   }

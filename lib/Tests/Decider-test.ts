@@ -1,5 +1,3 @@
-///<reference path="../imports.d.ts"/>
-
 import interfaces = require("../Interfaces");
 import errors = require("../CustomErrors");
 import dec = require("../Decider");
@@ -151,12 +149,6 @@ var testGroup = {
 
     });
 
-    //gently.expect(t.wiReg, "getItemByRef", function (reference: string) {
-    //  test.equal(reference, t.reference);
-
-    //  return {};
-    //});
-
     gently.expect(t.swf, "pollForDecisionTask", function (domain, taskList, callback: (error: Error, data) => void) {
 
       
@@ -220,7 +212,7 @@ var testGroup2 = {
     var taskList = "myList";
 
     var swf = gently.stub("Interfaces", "ISwfDataAccess");
-    var reg = gently.stub("Activity", "ActivityRegister");
+    //var reg = gently.stub("Activity", "ActivityRegister");
     var parser = gently.stub("EventParser", "EventParser");
     var state = { events: [] };
     var activity: interfaces.IActivity = gently.stub("Activity", "Activity");
@@ -246,7 +238,7 @@ var testGroup2 = {
     });
 
 
-    var context = new dec.DecisionContext(taskList, reg, parser, swf, null, state);
+    var context = new dec.DecisionContext(taskList, parser, swf, null, state);
 
     test.notEqual(context, null, "nothing returned");
     test.equal(context.state, state, "taskList not set");
@@ -258,28 +250,24 @@ var testGroup2 = {
     var taskList = "myList";
 
     var swf = gently.stub("Interfaces", "ISwfDataAccess");
-    var reg = gently.stub("Activity", "ActivityRegister");
+    //var reg = gently.stub("Activity", "ActivityRegister");
     var parser = gently.stub("EventParser", "EventParser");
     var state = { events: [] };
 
     help.nullErrorTest(test, function () {
-      var context = new dec.DecisionContext(null, reg, parser, swf, null, state);
+      var context = new dec.DecisionContext(null, parser, swf, null, state);
     });
 
     help.nullErrorTest(test, function () {
-      var context = new dec.DecisionContext(taskList, null, parser, swf, null, state);
+      var context = new dec.DecisionContext(taskList, null, swf, null, state);
     });
 
     help.nullErrorTest(test, function () {
-      var context = new dec.DecisionContext(taskList, reg, null, swf, null, state);
+      var context = new dec.DecisionContext(taskList, parser, null, null, state);
     });
 
     help.nullErrorTest(test, function () {
-      var context = new dec.DecisionContext(taskList, reg, parser, null, null, state);
-    });
-
-    help.nullErrorTest(test, function () {
-      var context = new dec.DecisionContext(taskList, reg, parser, swf, null, null);
+      var context = new dec.DecisionContext(taskList, parser, swf, null, null);
     });
 
     test.done();
@@ -318,7 +306,7 @@ var testGroup2 = {
       called = true;
     };
 
-    var context = new dec.DecisionContext(t.taskList, t.reg, t.parser, t.swf, fnc, t.state);
+    var context = new dec.DecisionContext(t.taskList, t.parser, t.swf, fnc, t.state);
     context.doNothing();
 
     test.equal(called, true, "handler was not called");
@@ -343,15 +331,64 @@ var testGroup2 = {
       return (data);
     });
 
-    gently.expect(t.reg, "getActivity", function (events) {
-      return (t.activity);
-    });
-
-
-    var context = new dec.DecisionContext(t.taskList, t.reg, t.parser, t.swf, null, t.state);
+    var context = new dec.DecisionContext(t.taskList, t.parser, t.swf, null, t.state);
     
     var fnc = context.getFunction(t.activity.name, t.activity.version);
     test.notEqual(fnc, null, "did not return a function");
+
+    test.done();
+
+  },
+  "A function that with a null name emits a error to the decider host": function (test: nodeunit.Test): void {
+
+    var t = basicDCSetup();
+
+    var feedbackHandler = decisionHandlerTest(t, "name", test);
+
+    var context = new dec.DecisionContext(t.taskList, t.parser, t.swf, feedbackHandler, t.state);
+
+    var fnc = context.getFunction(null, t.activity.version);
+    test.equal(fnc, null, "did not return a function");
+
+    test.done();
+  },
+  "A function that with a empty string name emits a error to the decider host": function (test: nodeunit.Test): void {
+
+    var t = basicDCSetup();
+
+    var feedbackHandler = decisionHandlerTest(t, "name", test);
+
+    var context = new dec.DecisionContext(t.taskList, t.parser, t.swf, feedbackHandler, t.state);
+
+    var fnc = context.getFunction("", t.activity.version);
+    test.equal(fnc, null, "did not return a function");
+
+    test.done();
+  },
+  "A function that with a null version emits a error to the decider host": function (test: nodeunit.Test): void {
+
+    var t = basicDCSetup();
+
+    var feedbackHandler = decisionHandlerTest(t, "version", test);
+    
+    var context = new dec.DecisionContext(t.taskList, t.parser, t.swf, feedbackHandler, t.state);
+
+    var fnc = context.getFunction(t.activity.name, null);
+    test.equal(fnc, null, "did not return a function");
+
+    test.done();
+
+  },
+  "A function that with a empty string version emits a error to the decider host": function (test: nodeunit.Test): void {
+
+    var t = basicDCSetup();
+
+    var feedbackHandler = decisionHandlerTest(t, "version", test);
+
+    var context = new dec.DecisionContext(t.taskList, t.parser, t.swf, feedbackHandler, t.state);
+
+    var fnc = context.getFunction(t.activity.name, "");
+    test.equal(fnc, null, "did not return a function");
 
     test.done();
 
@@ -382,7 +419,7 @@ var testGroup2 = {
       callback(null, "data");
     });
 
-    var context = new dec.DecisionContext(t.taskList, t.reg, t.parser, t.swf, null, t.state);
+    var context = new dec.DecisionContext(t.taskList, t.parser, t.swf, null, t.state);
 
     context.failWorkflow(new Error(errorMsg));
 
@@ -415,7 +452,7 @@ var testGroup2 = {
 
     });
 
-    var context = new dec.DecisionContext(t.taskList, t.reg, t.parser, t.swf, null, t.state);
+    var context = new dec.DecisionContext(t.taskList, t.parser, t.swf, null, t.state);
     context.doNothing();
 
     test.done();
@@ -444,7 +481,7 @@ var testGroup2 = {
 
     });
 
-    var context = new dec.DecisionContext(t.taskList, t.reg, t.parser, t.swf, null, t.state);
+    var context = new dec.DecisionContext(t.taskList, t.parser, t.swf, null, t.state);
     context.completeWorkflow();
 
     test.done();
@@ -481,7 +518,7 @@ var testGroup2 = {
 
     });
 
-    var context = new dec.DecisionContext(t.taskList, t.reg, t.parser, t.swf, null, t.state);
+    var context = new dec.DecisionContext(t.taskList, t.parser, t.swf, null, t.state);
     context.doActivity(t.activity);
     test.done();
   },
@@ -516,7 +553,7 @@ var testGroup2 = {
 
     });
 
-    var context = new dec.DecisionContext(t.taskList, t.reg, t.parser, t.swf, null, t.state);
+    var context = new dec.DecisionContext(t.taskList, t.parser, t.swf, null, t.state);
     context.doActivity(t.activity, input);
     test.done();
   },
@@ -567,46 +604,14 @@ var testGroup2 = {
 
     });
 
-    var context = new dec.DecisionContext(t.taskList, t.reg, t.parser, t.swf, null, t.state);
+    var context = new dec.DecisionContext(t.taskList, t.parser, t.swf, null, t.state);
 
     context.doActivity(t.activity, input);
     context.doActivity(t.activity, input);
 
     test.done();
-  },
-  "Throws an error when you request an activity that does not exist in config": function (test: nodeunit.Test): void {
-    var t = basicDCSetup();
-    var input = "myInput";
-
-    gently.expect(t.parser, "extractActivities", function (events) {
-      return ([t.activity]);
-    });
-
-    gently.expect(t.parser, "extractWorkflowExecutionData", function (events) {
-      var data: interfaces.IWorkflowExecutionData = {
-        name: "name",
-        version: "version",
-        input: "input"
-      };
-
-      return (data);
-    });
-
-    var called = false;
-
-    var fnc = function (err, message) {
-      test.notEqual(err, null, "an error should have been returned");
-      test.equal((message.length > 0), true, "no message returned when one was expected");
-      called = true;
-    };
-
-    var context = new dec.DecisionContext(t.taskList, t.reg, t.parser, t.swf, fnc, t.state);
-    context.doActivity(null, input);
-
-    test.equal(called, true, "feedbackHandler was not called");
-
-    test.done();
-  },
+  }
+  /*,
   "Can call getActivityState with good params": function (test: nodeunit.Test) {
 
     var t = basicDCSetup();
@@ -625,13 +630,7 @@ var testGroup2 = {
       return (data);
     });
 
-    gently.expect(t.reg, "getActivity", function (name, version) {
-      test.equal(name, t.activity.name);
-      test.equal(version, t.activity.version);
-      return (t.activity);
-    });
-
-    var context = new dec.DecisionContext(t.taskList, t.reg, t.parser, t.swf, null, t.state);
+    var context = new dec.DecisionContext(t.taskList, t.parser, t.swf, null, t.state);
     
     var a = context.getActivityState(t.activity.name, t.activity.version);
 
@@ -658,7 +657,7 @@ var testGroup2 = {
       return (data);
     });
 
-    var context = new dec.DecisionContext(t.taskList, t.reg, t.parser, t.swf, null, t.state);
+    var context = new dec.DecisionContext(t.taskList, t.parser, t.swf, null, t.state);
 
     help.nullErrorTest(test, function () {
       context.getActivityState(null, null);
@@ -667,39 +666,7 @@ var testGroup2 = {
 
     test.done();
   },
-  "Throws an error when calling getActivityState with bad config": function (test: nodeunit.Test) {
-
-    var t = basicDCSetup();
-
-    gently.expect(t.parser, "extractActivities", function (events) {
-      return ([t.activity]);
-    });
-
-    gently.expect(t.parser, "extractWorkflowExecutionData", function (events) {
-      var data: interfaces.IWorkflowExecutionData = {
-        name: "name",
-        version: "version",
-        input: "input"
-      };
-
-      return (data);
-    });
-
-    gently.expect(t.reg, "getActivity", function (name, version) {
-      test.equal(name, t.activity.name);
-      test.equal(version, t.activity.version);
-      return (null);
-    });
-
-    var context = new dec.DecisionContext(t.taskList, t.reg, t.parser, t.swf, null, t.state);
-
-    help.badConfigErrorTest(test, function () {
-      context.getActivityState(t.activity.name, t.activity.version);
-    });
-
-    test.done();
-  },
-  "add tests for getActivityState when no matching event data exists": function (test: nodeunit.Test) {
+  "getActivityState when no matching event data exists": function (test: nodeunit.Test) {
 
     var t = basicDCSetup();
 
@@ -724,13 +691,7 @@ var testGroup2 = {
       return (data);
     });
 
-    gently.expect(t.reg, "getActivity", function (name, version) {
-      test.equal(name, t.activity.name);
-      test.equal(version, t.activity.version);
-      return (t.activity);
-    });
-
-    var context = new dec.DecisionContext(t.taskList, t.reg, t.parser, t.swf, null, t.state);
+    var context = new dec.DecisionContext(t.taskList, t.parser, t.swf, null, t.state);
 
     var a = context.getActivityState(t.activity.name, t.activity.version);
 
@@ -738,7 +699,7 @@ var testGroup2 = {
 
     test.done();
   }
-
+  */
 };
 
 
@@ -758,13 +719,39 @@ function basicDCSetup() {
   activity.reference = "test_1";
   activity.input = "input";
 
-
   return {
     taskList: taskList,
     swf: swf, reg: reg, parser: parser, state: state, activity: activity
   };
 
 }
+
+function decisionHandlerTest(t, paramName, test) {
+
+  gently.expect(t.parser, "extractActivities", function (events) {
+    return ([t.activity]);
+  });
+
+  gently.expect(t.parser, "extractWorkflowExecutionData", function (events) {
+    var data: interfaces.IWorkflowExecutionData = {
+      name: "name",
+      version: "version",
+      input: "input"
+    };
+
+    return (data);
+  });
+
+  var feedbackHandler = function (err, msg, context) {
+    test.notEqual(err, null);
+    test.equal(err.message, paramName);
+  }
+
+  return feedbackHandler;
+
+
+}
+
 
 exports.deciderTests = testGroup;
 exports.decisionContextTests = testGroup2; 

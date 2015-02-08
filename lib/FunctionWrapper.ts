@@ -1,10 +1,9 @@
-/// <reference path="imports.d.ts" />
-
 import interfaces = require("./Interfaces");
 import AWS = require("aws-sdk");
 import DataAccess = require("./SwfDataAccess");
 import errors = require("./CustomErrors");
 
+//TODO: Consider replacing this class with a function and bind()
 export class FunctionWrapper {
 
   private activity: interfaces.IActivity;
@@ -12,8 +11,8 @@ export class FunctionWrapper {
 
   constructor(activity: interfaces.IActivity, context: interfaces.IDecisionContext) {
 
-    if (activity == null) throw new errors.NullArgumentError("activity cannot be null");
-    if (context == null) throw new errors.NullArgumentError("context cannot be null");
+    if (activity == null) throw new errors.NullOrEmptyArgumentError("activity cannot be null");
+    if (context == null) throw new errors.NullOrEmptyArgumentError("context cannot be null");
 
     this.activity = activity;
     this.context = context;

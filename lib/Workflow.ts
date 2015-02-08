@@ -1,5 +1,3 @@
-/// <reference path="imports.d.ts" />
-
 import AWS = require("aws-sdk");
 import a = require("./Activity");
 import d = require("./Decider");
@@ -18,7 +16,7 @@ export class WorkflowClient {
   private swf: dal.ISwfDataAccess;
 
   constructor(workflow: interfaces.IOptions, awsConfig: any, swf?: dal.ISwfDataAccess) {
-    
+
     this.validateOptions(workflow);
     this.validateConfig(awsConfig);
 
@@ -35,23 +33,28 @@ export class WorkflowClient {
 
   }
 
-  validateOptions(workflow: interfaces.IOptions) {
-    if (workflow == null) throw new errors.NullArgumentError("workflow");
+  private validateOptions(workflow: interfaces.IOptions) {
+    if (workflow == null) throw new errors.NullOrEmptyArgumentError("workflow");
     if (workflow.domain == null) throw new errors.InvalidArgumentError("domain is mandatory");
     if (workflow.taskList == null) throw new errors.InvalidArgumentError("taskList is mandatory");
   }
 
-  validateConfig(awsConfig: any) {
+  private validateConfig(awsConfig: any) {
 
-    if (awsConfig == null) throw new errors.NullArgumentError("awsConfig");
+    if (awsConfig == null) throw new errors.NullOrEmptyArgumentError("awsConfig");
     if (awsConfig.accessKeyId == null) throw new errors.InvalidArgumentError("accessKeyId is mandatory");
     if (awsConfig.secretAccessKey == null) throw new errors.InvalidArgumentError("secretAccessKey is mandatory");
     if (awsConfig.region == null) throw new errors.InvalidArgumentError("region is mandatory");
+
+    //if (!process.env.AWS_ACCESS_KEY_ID && awsConfig !=null && awsConfig.accessKeyId == null) throw new errors.InvalidArgumentError("accessKeyId is mandatory");
+    //if (!process.env.AWS_SECRET_ACCESS_KEY && awsConfig.secretAccessKey == null) throw new errors.InvalidArgumentError("secretAccessKey is mandatory");
+    //if (!process.env.AWS_REGION && awsConfig.region == null) throw new errors.InvalidArgumentError("region is mandatory");
+
   }
 
-  createActivityHost(taskList: string): a.ActivityHost {
+  public createActivityHost(taskList: string): a.ActivityHost {
 
-    if (taskList == null || taskList == "") throw new errors.NullArgumentError("taskList cannot be null or empty");
+    if (taskList == null || taskList == "") throw new errors.NullOrEmptyArgumentError("taskList cannot be null or empty");
 
     var reg = new r.ActivityRegister(this.workflow);
     var host = new a.ActivityHost(reg, this.workflow.domain, taskList, this.swf);
@@ -59,9 +62,9 @@ export class WorkflowClient {
     return host;
   }
 
-  createDeciderHost(taskList: string): d.DecisionHost {
+  public createDeciderHost(taskList: string): d.DecisionHost {
 
-    if (taskList == null || taskList == "") throw new errors.NullArgumentError("taskList cannot be null of empty");
+    if (taskList == null || taskList == "") throw new errors.NullOrEmptyArgumentError("taskList cannot be null of empty");
 
     var eventParser = new e.EventParser();
     var reg = new r.ActivityRegister(this.workflow);
@@ -73,37 +76,11 @@ export class WorkflowClient {
 
   }
 
-  startWorkflowOld(reference: string, input: string, callback: (err) => void) {
+  public startWorkflow(name: string, version: string, input: string, callback: (err) => void) {
 
-    if (reference == null || reference == "") throw new errors.NullArgumentError("reference is mandatory");
+    if (name == null || name == "") throw new errors.NullOrEmptyArgumentError("name is mandatory");
+    if (version == null || version == "") throw new errors.NullOrEmptyArgumentError("version is mandatory");
 
-    input = input == null ? input = "" : input;
-
-    var request: AWS.Swf.StartWorkflowExecutionRequest = {
-      domain: this.workflow.domain,
-      workflowId: uuid.v4(),
-      input: input,
-
-      workflowType: {
-        name: this.workflow.workflowType,
-        version: this.workflow.workflowTypeVersion
-      },
-
-      taskList: { name: this.workflow.taskList }
-
-    };
-
-    var me = this;
-
-    this.swf.startWorkflowExecution(request, callback);
-
-  }
-
-  startWorkflow(name: string, version:string, input: string, callback: (err) => void) {
-
-    if (name == null || name == "") throw new errors.NullArgumentError("name is mandatory");
-    if (version == null || version == "") throw new errors.NullArgumentError("version is mandatory");
-    
     input = input == null ? input = "" : input;
 
     var request: AWS.Swf.StartWorkflowExecutionRequest = {

@@ -1,5 +1,3 @@
-///<reference path="../imports.d.ts"/>
-
 import acts = require("../Activity");
 import interfaces = require("../Interfaces");
 import wrapper = require("../FunctionWrapper");
@@ -91,21 +89,21 @@ var testGroup = {
       var fnc2 = new wrapper.FunctionWrapper(activity, null);  
       test.equal(1,0, "Error should have occurred");
     } catch(e) {
-      test.equal(e.name, new errors.NullArgumentError().name, "Null Exception not returned");
+      test.equal(e.name, new errors.NullOrEmptyArgumentError().name, "Null Exception not returned");
     } 
     
     try {
       var fnc3 = new wrapper.FunctionWrapper(null, context);
       test.equal(1, 0, "Error should have occurred");
     } catch (e) {
-      test.equal(e.name, new errors.NullArgumentError().name, "Null Exception not returned");
+      test.equal(e.name, new errors.NullOrEmptyArgumentError().name, "Null Exception not returned");
     }
     
     try {
       var fnc4 = new wrapper.FunctionWrapper(null, null);
       test.equal(1, 0, "Error should have occurred");
     } catch (e) {
-      test.equal(e.name, new errors.NullArgumentError().name, "Null Exception not returned");
+      test.equal(e.name, new errors.NullOrEmptyArgumentError().name, "Null Exception not returned");
     }
 
     test.done();

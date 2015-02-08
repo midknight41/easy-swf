@@ -1,7 +1,7 @@
 {
   "name": "easy-swf",
   "description": "Easier way of using AWS Simple Workflow",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "author": "Chad Macey <chad_macey@hotmail.com>",
   "homepage": "",
   "contributors": [
@@ -10,12 +10,12 @@
   "devDependencies": {
     "gently": "latest",
     "nodeunit": "^0.9.0",
-	"nock": "0.22.x"
+    "nock": "0.22.x"
   },
   "dependencies": {
     "async": "^0.9.0",
-    "aws-sdk": "^2.0.9",
-    "uuid": "~1.4.1"
+    "aws-sdk": "^2.0.28",
+    "uuid": "^1.4.2"
   },
   "main": "lib/Workflow.js",
   "engines": {

@@ -1,5 +1,3 @@
-///<reference path="../imports.d.ts"/>
-
 import interfaces = require("../Interfaces");
 import errors = require("../CustomErrors");
 import acts = require("../Activity");
@@ -95,12 +93,12 @@ var testGroup = {
 
     test.done();
   },
-  "Throws error on bad request for Activity by name and version": function (test: nodeunit.Test): void {
+  "getActivity by name and version returns null when no match": function (test: nodeunit.Test): void {
     var ar = new reg.ActivityRegister(workflow);
 
-    help.invalidArgumentErrorTest(test, function () {
-      ar.getActivity("fadkj", "1");
-    });
+    var activity = ar.getActivity("fadkj", "1");
+
+    test.equal(activity, null, "no activity should have returned");
 
     test.done();
 

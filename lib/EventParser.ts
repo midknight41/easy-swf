@@ -1,5 +1,3 @@
-/// <reference path="imports.d.ts" />
-
 import AWS = require("aws-sdk");
 import async = require("async");
 
@@ -43,7 +41,7 @@ export class EventParser {
 
   public extractActivities(events: AWS.Swf.HistoryEvent[]): interfaces.IActivity[] {
 
-    if (events == null) throw new errors.NullArgumentError("events is mandatory");
+    if (events == null) throw new errors.NullOrEmptyArgumentError("events is mandatory");
 
     //var events = this.events;
     var activityIndex: number[] = [];

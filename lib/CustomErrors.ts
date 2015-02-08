@@ -13,7 +13,7 @@ export class BadConfigError implements Error {
 
 require('util').inherits(BadConfigError, Error);
 
-export class NullArgumentError implements Error {
+export class NullOrEmptyArgumentError implements Error {
   public name: string = "NullArgumentError";
   public message: string;
   
@@ -27,7 +27,7 @@ export class NullArgumentError implements Error {
 
 }
 
-require('util').inherits(NullArgumentError, Error);
+require('util').inherits(NullOrEmptyArgumentError, Error);
 
 export class InvalidArgumentError implements Error {
   public name: string = "InvalidArgumentError";

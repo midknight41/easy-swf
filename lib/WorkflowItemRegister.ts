@@ -32,7 +32,7 @@ export class WorkflowItemRegister implements interfaces.IWorkflowItemRegister {
       return configEntries[0];
 
     } else {
-      throw new errors.InvalidArgumentError("Cannot find workflow item " + name + ":" + version + " in register");
+      throw new errors.InvalidArgumentError("cannot find workflow item " + name + ":" + version + " in register");
     }
 
   }
@@ -46,7 +46,7 @@ export class WorkflowItemRegister implements interfaces.IWorkflowItemRegister {
     if (configEntries.length > 0) {
       return configEntries[0];
     } else {
-      throw new errors.InvalidArgumentError("Cannot find workflow item " + reference + " in register");
+      throw new errors.InvalidArgumentError("cannot find workflow item by ref " + reference + " in register");
     }
 
   }

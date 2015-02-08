@@ -1,4 +1,3 @@
-/// <reference path="imports.d.ts" />
 import AWS = require("aws-sdk");
 
 export var monitor = console;
@@ -30,8 +29,6 @@ export class SwfDataAccess implements ISwfDataAccess {
 
   respondScheduleActivityTask(taskToken: string, decisions: AWS.Swf.Decision[], callback: (err: any, data: any) => void) {
 
-    //debug.log("respondScheduleActivityTask", taskToken);
-
     var params: AWS.Swf.RespondDecisionTaskCompletedRequest = {
       taskToken: taskToken,
       decisions: decisions
@@ -55,8 +52,6 @@ export class SwfDataAccess implements ISwfDataAccess {
   }
 
   respondRecordMarker(taskToken: string, callback: (err: any, data: any) => void) {
-
-    //debug.log("respondRecordMarker", taskToken);
 
     var attr: AWS.Swf.RecordMarkerDecisionAttributes = {
       markerName: "NoActionFromThisDecision"
@@ -90,8 +85,6 @@ export class SwfDataAccess implements ISwfDataAccess {
 
   respondCompleteWorkflowExecution(taskToken: string, callback: (err: any, data: any) => void) {
 
-    //debug.log("respondCompleteWorkflowExecution", taskToken);
-
     var decision: AWS.Swf.Decision = {
       decisionType: "CompleteWorkflowExecution"
     };
@@ -120,8 +113,6 @@ export class SwfDataAccess implements ISwfDataAccess {
   }
 
   respondFailWorkflowExecution(taskToken: string, reason: string, detail: string, callback: (err: any, data: any) => void) {
-
-    //debug.log("respondFailWorkflowExecution", taskToken);
 
     var attr: AWS.Swf.FailWorkflowExecutionDecisionAttributes = {
       reason: reason,
@@ -157,8 +148,6 @@ export class SwfDataAccess implements ISwfDataAccess {
 
   public respondActivityTaskCanceled(params: AWS.Swf.RespondActivityTaskCanceledRequest, callback: (err: any, data: any) => void) {
 
-    //debug.log("respondActivityTaskCanceled", params.taskToken);
-
     this.swf.respondActivityTaskCanceled(params, function (err, data) {
       callback(err, data);
     });
@@ -167,8 +156,6 @@ export class SwfDataAccess implements ISwfDataAccess {
 
   public respondActivityTaskCompleted(taskToken: string, result: string, callback: (err: any, data: any) => void) {
 
-    //debug.log("respondActivityTaskCompleted", taskToken);
-    
     var params: AWS.Swf.RespondActivityTaskCompletedRequest = {
       taskToken: taskToken,
       result: result
@@ -192,8 +179,6 @@ export class SwfDataAccess implements ISwfDataAccess {
 
   public respondActivityTaskFailed(taskToken: string, errMessage: string, callback: (err: Error, data: any) => void) {
 
-    //debug.log("respondActivityTaskFailed", taskToken);
-
     var failedParams: AWS.Swf.RespondActivityTaskFailedRequest = {
       taskToken: taskToken,
       reason: errMessage
@@ -213,16 +198,10 @@ export class SwfDataAccess implements ISwfDataAccess {
 
     });
 
-
-    //this.swf.respondActivityTaskFailed(failedParams, function (err, data) {
-    //  //debug.log("ERR:respondActivityTaskFailed ", err);
-
-    //});
+  
   }
 
   public pollForDecisionTask(domain: string, taskList: string, callback) {
-
-    //debug.log("pollForDecisionTask");
 
     var request = {
       domain: domain,
@@ -248,8 +227,6 @@ export class SwfDataAccess implements ISwfDataAccess {
 
   public pollForActivityTask(domain: string, taskList: string, callback) {
 
-    //debug.log("pollForActivityTask");
-
     var request = {
       domain: domain,
       taskList: { name: taskList }
@@ -272,9 +249,6 @@ export class SwfDataAccess implements ISwfDataAccess {
   }
 
   public startWorkflowExecution(request: AWS.Swf.StartWorkflowExecutionRequest, callback: (err: Error) => void) {
-
-
-    //debug.log("startWorkflowExecution", request.input);
 
     var me = this;
 

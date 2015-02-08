@@ -1,5 +1,3 @@
-/// <reference path="imports.d.ts" />
-
 import AWS = require("aws-sdk");
 import dal = require("./SwfDataAccess");
 import interfaces = require("./Interfaces");
@@ -14,7 +12,7 @@ export class ActivityHost {
   private feedbackHandler: (err: Error, message: string) => void;
   private continuePolling: boolean;
   private lastHeartbeat: number;
-  private heartId: number;
+  private heartId: NodeTimer;
   private whenStopped: (err: Error) => void;
 
   constructor(register: interfaces.IActivityRegister, domain: string, taskList: string, swf: dal.ISwfDataAccess) {
@@ -25,11 +23,11 @@ export class ActivityHost {
     this.taskList = taskList;
   }
 
-  public handleActivity(name: string, version: string, activityCode?: any) {
+  public handleActivity(name: string, version: string, activityCode?: (data: string, next: (err: Error, result: string) => void) => void) {
 
     var container: WorkflowCallbackContainer = new WorkflowCallbackContainer();
 
-    var activity = this.activityRegister.getActivity(name, version);
+    var activity = this.activityRegister.registerActivity(name, version, this.taskList);
 
     if (activity == null) {
       //workflow is not configured properly.
@@ -64,7 +62,7 @@ export class ActivityHost {
   private createHeartbeatWrapper(feedbackHandler: (err: Error, message: string) => void): any {
 
     var me = this;
-    
+
     return function (err: Error, message: string) {
 
       var check: number = Date.now();
@@ -97,7 +95,7 @@ export class ActivityHost {
       this.feedbackHandler = this.createHeartbeatWrapper(function (err: Error, message: string) { });
 
     this.start();
-    
+
   }
 
   private start() {
@@ -165,7 +163,7 @@ export class ActivityHost {
             taskList: container.taskList
           };
 
-          container.code(activityState, data.input, function next(err?: Error, result?: string) {
+          container.code(data.input, function next(err?: Error, result?: string) {
             me.proceedAfterActivity(data.activityType.name, data.activityType.version, token, err, result);
           });
 
@@ -222,7 +220,7 @@ export class WorkflowCallbackContainer implements interfaces.IActivity {
   public version: string;
   public taskList: string;
   public reference: string;
-  public code: (activity: interfaces.IActivityState, input: string, callback: (err: Error, data: any) => void) => void;
+  public code: (data: string, next: (err: Error, result: string) => void) => void;
 }
 
 export class Activity implements interfaces.IActivity {

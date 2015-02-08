@@ -1,5 +1,3 @@
-/// <reference path="imports.d.ts" />
-
 import AWS = require("aws-sdk");
 import DataAccess = require("./SwfDataAccess");
 import uuid = require("uuid");
@@ -8,6 +6,7 @@ import e = require("./EventParser");
 import interfaces = require("./Interfaces");
 import wrapper = require("./FunctionWrapper");
 import errors = require("./CustomErrors");
+import utils = require("./Utils");
 
 export class DecisionHost {
   private swf: DataAccess.ISwfDataAccess;
@@ -15,23 +14,23 @@ export class DecisionHost {
   public taskList: string;
   private domain: string;
   //private decisionLogic;
-  private workflowDeciders: any[]; 
+  private workflowDeciders: any[];
   private eventParser: e.EventParser;
   private feedbackHandler: (err: Error, message: string, context: DecisionContext) => void;
   private workflowItemRegister: interfaces.IWorkflowItemRegister;
   private continuePolling: boolean;
   private lastHeartbeat: number;
-  private heartId: number;
-  private whenStopped: (err: Error) =>void;
+  private heartId: NodeTimer;
+  private whenStopped: (err: Error) => void;
 
   constructor(workflowItemRegister: interfaces.IWorkflowItemRegister, register: interfaces.IActivityRegister, domain: string, taskList: string, swf: DataAccess.ISwfDataAccess, eventParser: e.EventParser) {
 
-    if (workflowItemRegister == null) throw new errors.NullArgumentError("workflowItemRegister cannot be null");
-    if (register == null) throw new errors.NullArgumentError("register cannot be null");
-    if (domain == null || domain == "") throw new errors.NullArgumentError("domain cannot be a null or empty string");
-    if (taskList == null || taskList == "") throw new errors.NullArgumentError("taskList cannot be a null or empty string");
-    if (swf == null) throw new errors.NullArgumentError("swf cannot be null");
-    if (eventParser == null) throw new errors.NullArgumentError("eventParser cannot be null");
+    if (workflowItemRegister == null) throw new errors.NullOrEmptyArgumentError("workflowItemRegister cannot be null");
+    if (register == null) throw new errors.NullOrEmptyArgumentError("register cannot be null");
+    if (domain == null || domain == "") throw new errors.NullOrEmptyArgumentError("domain cannot be a null or empty string");
+    if (taskList == null || taskList == "") throw new errors.NullOrEmptyArgumentError("taskList cannot be a null or empty string");
+    if (swf == null) throw new errors.NullOrEmptyArgumentError("swf cannot be null");
+    if (eventParser == null) throw new errors.NullOrEmptyArgumentError("eventParser cannot be null");
 
     this.domain = domain;
     this.activityRegister = register;
@@ -39,15 +38,15 @@ export class DecisionHost {
     this.swf = swf;
     this.eventParser = eventParser;
     this.workflowDeciders = [];
-    this.workflowItemRegister = workflowItemRegister; 
+    this.workflowItemRegister = workflowItemRegister;
     this.continuePolling = false;
   }
 
-  public handleWorkflow(workflowType:string, version: string, decisionLogic: (err, context: DecisionContext) => void) {
+  public handleWorkflow(workflowType: string, version: string, decisionLogic: (err, context: DecisionContext) => void) {
 
-    if (workflowType == null|| workflowType.length == 0) throw new errors.NullArgumentError("workflowType cannot be a null or empty string");
-    if (version == null || version.length == 0) throw new errors.NullArgumentError("version cannot be a null or empty string");
-    if (decisionLogic == null) throw new errors.NullArgumentError("decisionLogic cannot be null");
+    if (workflowType == null || workflowType.length == 0) throw new errors.NullOrEmptyArgumentError("workflowType cannot be a null or empty string");
+    if (version == null || version.length == 0) throw new errors.NullOrEmptyArgumentError("version cannot be a null or empty string");
+    if (decisionLogic == null) throw new errors.NullOrEmptyArgumentError("decisionLogic cannot be null");
 
 
     var ref = workflowType + "(" + version + ")";
@@ -72,7 +71,7 @@ export class DecisionHost {
     var me = this;
 
     me.lastHeartbeat = Date.now();
-    
+
     me.heartId = setInterval(function () {
 
       me.feedbackHandler(null, "[Decider] Heartbeat check", null);
@@ -110,7 +109,7 @@ export class DecisionHost {
 
   }
 
-  public stop(callback?: (err:Error) => void) {
+  public stop(callback?: (err: Error) => void) {
     this.feedbackHandler(null, "[Decider] stopped polling", null);
 
     if (this.heartId != null) {
@@ -137,7 +136,7 @@ export class DecisionHost {
     me.swf.pollForDecisionTask(domain, taskList, function (error: Error, data) {
 
       if (error != null) {
-          me.feedbackHandler(error, "[Decider] unexpected polling response error - " + error.message, null);
+        me.feedbackHandler(error, "[Decider] unexpected polling response error - " + error.message, null);
       }
 
       me.feedbackHandler(error, "[Decider] polling response", null);
@@ -146,7 +145,7 @@ export class DecisionHost {
 
         me.feedbackHandler(null, "[Decider] a decision is required!", null);
 
-        var context = new DecisionContext(me.taskList, me.activityRegister, me.eventParser, me.swf, me.feedbackHandler, data);
+        var context = new DecisionContext(me.taskList, me.eventParser, me.swf, me.feedbackHandler, data);
 
         var item = me.workflowItemRegister.getItemByRef(context.workflowReference);
         item.code(error, context);
@@ -179,19 +178,19 @@ export class DecisionContext implements interfaces.IDecisionContext {
   public workflowReference: string;
   private decisions: AWS.Swf.Decision[] = [];
   private submissionRegistered: boolean = false;
-  private activityRegister: interfaces.IActivityRegister;
+
+  //Do we need to pass in the context here? Will bind() suffice?
   private feedbackHandler: (err: Error, message: string, context: DecisionContext) => void;
 
-  constructor(taskList: string, register: interfaces.IActivityRegister, eventParser: e.EventParser, swf: DataAccess.ISwfDataAccess, feedbackHandler: (err: Error, message: string, context: DecisionContext) => void, state: AWS.Swf.DecisionTask) {
+  //TODO: this signature should have the handler as last parameter
+  constructor(taskList: string, eventParser: e.EventParser, swf: DataAccess.ISwfDataAccess, feedbackHandler: (err: Error, message: string, context: DecisionContext) => void, state: AWS.Swf.DecisionTask) {
 
-    if (register == null) throw new errors.NullArgumentError("register cannot be null");
-    if (swf == null) throw new errors.NullArgumentError("swf cannot be null");
-    if (taskList == null) throw new errors.NullArgumentError("taskList cannot be null");
-    if (state == null) throw new errors.NullArgumentError("state cannot be null");
-    if (eventParser == null) throw new errors.NullArgumentError("eventParser cannot be null");
+    if (swf == null) throw new errors.NullOrEmptyArgumentError("swf cannot be null");
+    if (taskList == null) throw new errors.NullOrEmptyArgumentError("taskList cannot be null");
+    if (state == null) throw new errors.NullOrEmptyArgumentError("state cannot be null");
+    if (eventParser == null) throw new errors.NullOrEmptyArgumentError("eventParser cannot be null");
 
     this.taskList = taskList;
-    this.activityRegister = register;
     this.swf = swf;
     this.state = state;
     this.taskToken = this.state.taskToken;
@@ -199,8 +198,9 @@ export class DecisionContext implements interfaces.IDecisionContext {
     this.activities = eventParser.extractActivities(state.events);
     var data = eventParser.extractWorkflowExecutionData(state.events);
 
+
     this.workflowInput = data.input;
-    this.workflowReference = data.name + "(" + data.version + ")";
+    this.workflowReference = utils.createReferenceString(data.name, data.version);
   }
 
   public lastActivity(): interfaces.IActivity {
@@ -236,62 +236,22 @@ export class DecisionContext implements interfaces.IDecisionContext {
     });
   }
 
-
-  private getFirstActivity(activityName: string, version: string): interfaces.IActivity {
-    var activity = this.activities.filter(function (item, index, array) {
-
-      return (item.name == activityName && item.version == version);
-    });
-
-    if (activity.length > 0) { return (activity[0]); }
-    return null;
-  }
-
-  public getMatchingActivities(reference: string): interfaces.IActivity[] {
-
-    var activityDefn = this.activityRegister.getActivityByRef(reference);
-
-    var activities = this.activities.filter(function (item, index, array) {
-
-      return (item.name == activityDefn.name && item.version == activityDefn.version);
-    });
-
-    return (activities);
-  }
-
-  public getActivityState(name: string, version: string): interfaces.IActivity {
-
-    if (name == null) throw new errors.NullArgumentError("name");
-    if (version == null) throw new errors.NullArgumentError("version");
-
-    var reference = name + "(" + version + ")";
-
-    var activityFromConfig = this.activityRegister.getActivity(name, version);
-    
-    if (activityFromConfig == null) throw new errors.BadConfigError("activity with reference " + reference + " does not exist in config");
-
-    var activity = this.getFirstActivity(name, version);
-
-    if (activity == null) {
-      var activityStub: interfaces.IActivity = {
-        name: name,
-        version: version,
-        taskList: this.taskList,
-        reference: name + "(" + version + ")"
-      };
-
-      activity = activityStub;
-    }
-
-    activity.reference = reference;
-
-    return activity;
-  }
-
   public getFunction(name: string, version: string): any {
 
     var me = this;
-    var activity = this.getActivityState(name, version);
+
+    if (name == null || name.length == 0) {
+      me.feedbackHandler(new errors.NullOrEmptyArgumentError("name"), "[Decider] ERROR: getFunction", me);
+      return null;
+
+    }
+
+    if (version == null || version.length == 0) {
+      me.feedbackHandler(new errors.NullOrEmptyArgumentError("version"), "[Decider] ERROR: getFunction", me);
+      return null;
+    }
+
+    var activity = me.getActivityState(name, version);
 
     return new wrapper.FunctionWrapper(activity, me).getFunction();
 
@@ -300,12 +260,13 @@ export class DecisionContext implements interfaces.IDecisionContext {
   public doActivity(activity: interfaces.IActivity, data?: string) {
 
     var me = this;
+
     if (activity == null) {
-      this.feedbackHandler(new errors.NullArgumentError("activity cannot be null"), "[Decider] ERROR: doActivity", me);
+      me.feedbackHandler(new errors.NullOrEmptyArgumentError("activity cannot be null"), "[Decider] ERROR: doActivity", me);
       return;
     }
 
-    this.doActivityByName(activity.name, activity.version, activity.taskList, data);
+    me.doActivityByName(activity.name, activity.version, activity.taskList, data);
   }
 
   public doNothing() {
@@ -318,6 +279,38 @@ export class DecisionContext implements interfaces.IDecisionContext {
 
     });
 
+  }
+  
+  private getFirstActivity(activityName: string, version: string): interfaces.IActivity {
+    var activity = this.activities.filter(function (item, index, array) {
+
+      return (item.name == activityName && item.version == version);
+    });
+
+    if (activity.length > 0) { return (activity[0]); }
+    return null;
+  }
+
+  private getActivityState(name: string, version: string): interfaces.IActivity {
+
+    var reference = utils.createReferenceString(name, version);
+
+    var activity = this.getFirstActivity(name, version);
+
+    if (activity == null) {
+      var activityStub: interfaces.IActivity = {
+        name: name,
+        version: version,
+        taskList: this.taskList,
+        reference: reference
+      };
+
+      activity = activityStub;
+    }
+
+    activity.reference = reference;
+
+    return activity;
   }
 
   private doActivityByName(activityName: string, version: string, taskList: string, data?: string) {

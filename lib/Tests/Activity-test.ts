@@ -1,5 +1,3 @@
-///<reference path="../imports.d.ts"/>
-
 import interfaces = require("../Interfaces");
 import errors = require("../CustomErrors");
 import acts = require("../Activity");
@@ -135,9 +133,10 @@ var testGroup = {
     var swf = gently.stub("Interfaces", "ISwfDataAccess");
     var reg = gently.stub("ActivityRegister", "ActivityRegister");
 
-    gently.expect(reg, "getActivity", function (name, version) {
+    gently.expect(reg, "registerActivity", function (name, version, task) {
       test.equal(name, handler, "activityName not correct");
       test.equal(version, "1", "version not correct");
+      test.equal(task, taskList, "taskList not correct");
       return (activity2);
     });
     
@@ -155,7 +154,7 @@ var testGroup = {
 
     var host = new acts.ActivityHost(reg, domain, taskList, swf);
 
-    host.handleActivity(handler, "1", function (err, data, next) {
+    host.handleActivity(handler, "1", function (data, next) {
       test.equal(1, 0, "This handler should not get called");
     });
 
@@ -198,6 +197,9 @@ function TestNextFunction(test, inErr, result) {
   activity.version = "1";
 
   var swfData = {
+    workflowExecution: {
+      workflowId: "asdg-asdaf-adaf-afas"
+    },
     startedEventId: 1,
     taskToken: "token",
     activityType: { name: activityName, version: "1" },
@@ -207,9 +209,10 @@ function TestNextFunction(test, inErr, result) {
   var swf = gently.stub("Interfaces", "ISwfDataAccess");
   var reg = gently.stub("ActivityRegister", "ActivityRegister");
 
-  gently.expect(reg, "getActivity", function (name, version) {
+  gently.expect(reg, "registerActivity", function (name, version, task) {
     test.equal(name, activityName, "activityName not correct");
     test.equal(version, "1", "version not correct");
+    test.equal(task, taskList, "taskList not correct");
     return (activity);
   });
 
@@ -239,8 +242,7 @@ function TestNextFunction(test, inErr, result) {
 
   var host = new acts.ActivityHost(reg, domain, taskList, swf);
 
-  host.handleActivity(activityName, "1", function (err, data, next) {
-    test.equal(err, null, "An error occurred");
+  host.handleActivity(activityName, "1", function (data, next) {
     test.equal(swfData.input, data, "input was not correctly returned");
 
     next(inErr, result);
@@ -271,9 +273,11 @@ function TestAnActivity(test: nodeunit.Test, activity: interfaces.IActivity, swf
   var reg = gently.stub("ActivityRegister", "ActivityRegister");
 
 
-  gently.expect(reg, "getActivity", function (name, version) {
+  gently.expect(reg, "registerActivity", function (name, version, list) {
     test.equal(name, activityName, "activityName not correct");
     test.equal(version, "1", "version not correct");
+    test.equal(list, taskList, "taskList not correct");
+    
     return (activity);
   });
 
@@ -291,8 +295,7 @@ function TestAnActivity(test: nodeunit.Test, activity: interfaces.IActivity, swf
 
   var host = new acts.ActivityHost(reg, domain, taskList, swf);
 
-  host.handleActivity(activityName, "1", function (err, data, next) {
-    test.equal(err, null, "An error occurred");
+  host.handleActivity(activityName, "1", function (data, next) {
     test.equal(swfData.input, data, "input was not correctly returned");
     host.stop();
   });

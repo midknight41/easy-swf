@@ -35,7 +35,9 @@ Ankh.NoLoad
 *.js.map
 *.csproj
 *.csproj.user
-
+.ntvs_analysis.dat
+*.sln
+*.njsproj
 #MonoDevelop
 *.pidb
 *.userprefs

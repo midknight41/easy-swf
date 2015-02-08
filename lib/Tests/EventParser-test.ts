@@ -1,5 +1,3 @@
-///<reference path="../imports.d.ts"/>
-
 import interfaces = require("../Interfaces");
 import errors = require("../CustomErrors");
 import parser = require("../EventParser");

@@ -25,6 +25,7 @@ export interface IActivity extends IWorkflowItem {
 export interface IActivityRegister {
   getActivityByRef(reference: string): IActivity;
   getActivity(name: string, version: string): IActivity;
+  registerActivity(name: string, version: string, taskList: string): IActivity
 }
 
 export interface IWorkflowItemRegister {
@@ -53,13 +54,14 @@ export interface IOptions extends IDomainConfig {
 
 export interface IDecisionContext {
 
-  lastActivity(): IActivity;
   doActivity(activity: IActivity, data?: string);
-  //doActivityByName(activityName: string, version: string, taskList: string, data?: string);
-  getMatchingActivities(reference: string): IActivity[];
   getFunction(name: string, version: string): any;
-  getActivityState(name: string, version: string): IActivity;
-  failWorkflow(err: Error);
   completeWorkflow();
+  failWorkflow(err: Error);
+  doNothing();
+  lastActivity(): IActivity;
+  //doActivityByName(activityName: string, version: string, taskList: string, data?: string);
+  //getMatchingActivities(reference: string): IActivity[];
+  //getActivityState(name: string, version: string): IActivity;
 
 }
