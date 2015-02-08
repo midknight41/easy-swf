@@ -29,7 +29,7 @@ export interface IActivityRegister {
 }
 
 export interface IWorkflowItemRegister {
-  addItem(reference: string, name: string, version: string, taskList: string, callback: any);
+  addItem(reference: string, name: string, version: string, taskList: string, callback: (context: IDecisionContext) => void);
   getItem(name: string, version: string): IWorkflowItem;
   getItemByRef(reference: string): IWorkflowItem;
 }
@@ -55,7 +55,7 @@ export interface IOptions extends IDomainConfig {
 export interface IDecisionContext {
 
   doActivity(activity: IActivity, data?: string);
-  getFunction(name: string, version: string): any;
+  getFunction(name: string, version: string): Function;
   completeWorkflow();
   failWorkflow(err: Error);
   doNothing();

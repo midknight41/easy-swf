@@ -5,51 +5,11 @@ Easy SWF is a module made to make using the AWS Simple Workflow Service a little
 
 You need to be familiar with how SWF works. This [link](http://docs.aws.amazon.com/amazonswf/latest/developerguide/swf-dg-basic.html) is useful for understanding the core concepts.
 
-##Example config
+##Breaking Changes from Previous Version
 
-__REWRITE__
-
-To avoid having to put version numbers and task list names into the code (which gets messy), Easy SWF has a __reference__ attribute in the workflow definition which you use in the code. The other elements match the configuration in the AWS management console.
-
-
-```
-{
-	"awsConfig":
-		{
-			"accessKeyId": "[YourAccessKeyId]",
-			"secretAccessKey": "[YourSecretAccessKey]",
-			"region": "[YourRegion]"
-		},
-
-	"workflow": {
-        "domain": "ExampleDomain",
-		"reference": "example1",
-		"workflowType" : "example1",
-		"workflowTypeVersion" : "1",
-        "taskList": "taskList",
-        "activities": [
-            {
-                "reference": "taskOne",
-                "name": "taskOne",
-                "version": "1",
-                "taskList": "taskList"
-            },
-            {
-                "reference": "taskTwo",
-                "name": "taskTwo",
-                "version": "1",
-                "taskList": "taskList"
-            },
-            {
-                "reference": "taskThree",
-                "name": "taskThree",
-                "version": "1",
-                "taskList": "taskList"
-            }
-        ]
-    }
-}
-```
+- The callback for ActivityHost.handleActivity() no longer includes an error. Errors are returned via ActivityHost.listen()
+- The callback for DeciderHost.handleWorkflow() no longer includes an error. Errors are returned via DeciderHost.listen()
+- DeciderContext.getFunction now requires a version parameter. This removed the need for explicit tast configuration.
 
 ##How to create a client
 
@@ -88,7 +48,7 @@ acts.handleActivity("taskThree", "1", function (data, next) {
   next(null, data + " three");
 });
 
-acts.listen(function (err: Error, message: string) {
+acts.listen(function (err, message) {
 
    //get feedback from activity host
   console.log(message);
@@ -99,10 +59,13 @@ acts.listen(function (err: Error, message: string) {
 
 ##How the decisions work
 
+A DeciderHost is created to handle all decisions. A decision handler is created for each workflow. Any errors will returned via the DeciderHost.listen callback.
+
+Here is an example decider:
 ```
 var decider = client.createDeciderHost("taskList");
 
-decider.handleWorkflow("workflowType", "v1", function decisionLogic(err, context) {
+decider.handleWorkflow("example", "1", function(context) {
 
   var taskOne = context.getFunction("taskOne", "1");
   var taskTwo = context.getFunction("taskTwo", "1");
@@ -120,7 +83,7 @@ decider.handleWorkflow("workflowType", "v1", function decisionLogic(err, context
         if (finalErr != null) { context.failWorkflow(finalErr); return; }
 
         console.log(finalData);
-        context.allDone();
+        context.completeWorkflow();
       });
 
     });
@@ -145,10 +108,25 @@ decider.listen(function (err, message, context) {
 });
 
 ```
+The context object has the following methods:
+
+####getFunction(name: string, version: string): Function
+This returns different functions based on the  current WorkflowExecution history. These functions will schedule tasks, return data from activities, or raise errors depending on what is returned from the activity handler.
+
+This allows you to write simpler logic in your decider using a traditional callback structure.
+
+####completeWorkflow()
+Tells SimpleWorkflow to complete the WorkflowExecution.
+####failWorkflow(err: Error)
+Tells SimpleWorkflow to fails the WorkflowExecution and stores err.message in the WorkflowExecution
+####doNothing()
+You must always return a response to SWF even if you don't want to make any decisions. This method tells SWF that you don't want to make a decision.
+
+
 
 ##How to start a workflow
 ```
-client.startWorkflow("workflowType", "v1", function (err) {
+client.startWorkflow("example", "1", function (err) {
 
 });
 

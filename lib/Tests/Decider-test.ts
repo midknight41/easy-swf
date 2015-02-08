@@ -74,7 +74,7 @@ var testGroup = {
 
     var host = new dec.DecisionHost(t.wiReg, t.reg, t.domain, t.taskList, t.swf, t.parser);
 
-    var handler = function (err, context) {
+    var handler = function (context) {
 
     }
 
@@ -98,7 +98,7 @@ var testGroup = {
 
     var host = new dec.DecisionHost(t.wiReg, t.reg, t.domain, t.taskList, t.swf, t.parser);
 
-    var handler = function (err, context) {
+    var handler = function (context) {
 
     }
 
@@ -133,7 +133,7 @@ var testGroup = {
 
     var host = new dec.DecisionHost(t.wiReg, t.reg, t.domain, t.taskList, t.swf, t.parser);
 
-    var handler = function (err, context) {
+    var handler = function (context) {
 
     }
 

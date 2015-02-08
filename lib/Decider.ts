@@ -42,7 +42,7 @@ export class DecisionHost {
     this.continuePolling = false;
   }
 
-  public handleWorkflow(workflowType: string, version: string, decisionLogic: (err, context: DecisionContext) => void) {
+  public handleWorkflow(workflowType: string, version: string, decisionLogic: (context: DecisionContext) => void) {
 
     if (workflowType == null || workflowType.length == 0) throw new errors.NullOrEmptyArgumentError("workflowType cannot be a null or empty string");
     if (version == null || version.length == 0) throw new errors.NullOrEmptyArgumentError("version cannot be a null or empty string");
@@ -148,7 +148,7 @@ export class DecisionHost {
         var context = new DecisionContext(me.taskList, me.eventParser, me.swf, me.feedbackHandler, data);
 
         var item = me.workflowItemRegister.getItemByRef(context.workflowReference);
-        item.code(error, context);
+        item.code(context);
       } else {
         me.feedbackHandler(null, "[Decider] nothing to do", null);
       }
