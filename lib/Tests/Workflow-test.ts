@@ -9,9 +9,16 @@ var gently = new (require("gently"));
 
 var testGroup = {
   setUp: function (callback: nodeunit.ICallbackFunction): void {
+    if (process.env.AWS_ACCESS_KEY_ID) delete process.env.AWS_ACCESS_KEY_ID;
+    if (process.env.AWS_SECRET_ACCESS_KEY) delete process.env.AWS_SECRET_ACCESS_KEY;
+    if (process.env.AWS_REGION) delete process.env.AWS_REGION;
     callback();
   },
   tearDown: function (callback: nodeunit.ICallbackFunction): void {
+    if (process.env.AWS_ACCESS_KEY_ID) delete process.env.AWS_ACCESS_KEY_ID;
+    if (process.env.AWS_SECRET_ACCESS_KEY) delete process.env.AWS_SECRET_ACCESS_KEY;
+    if (process.env.AWS_REGION) delete process.env.AWS_REGION;
+
     callback();
   },
   "Can create a Decider Host": function (test: nodeunit.Test): void {
@@ -151,13 +158,13 @@ var testGroup = {
       "secretAccessKey": "secret",
       "region": "eu-west-1"
     };
-    
+
 
     var client = new workflow.WorkflowClient(options, config, swf);
 
     test.done();
   },
-  "Null or Bad AWS config name throws an error": function (test: nodeunit.Test): void {
+  "Null AWS config throws an error in process.env.AWS_ACCESS_KEY_ID is missing": function (test: nodeunit.Test): void {
 
     var name = "workflowName";
     var options =
@@ -168,13 +175,65 @@ var testGroup = {
 
     var swf = gently.stub("Interfaces", "ISwfDataAccess");
 
-    var config = {
-      "accessKeyId": "access",
-      "secretAccessKey": "secret",
-      "region": "eu-west-1"
-    };
+    process.env.AWS_SECRET_ACCESS_KEY = "abc";
+    process.env.AWS_REGION = "abc";
 
-    ConstructorTest(test, options, null, swf, new errors.NullOrEmptyArgumentError("msg"));    
+    ConstructorTest(test, options, null, swf);
+
+    test.done();
+  },
+  "Null AWS config throws an error in process.env.AWS_SECRET_ACCESS_KEY is missing": function (test: nodeunit.Test): void {
+
+    var name = "workflowName";
+    var options =
+      {
+        "domain": "myDomain",
+        "taskList": "mainList",
+      };
+
+    var swf = gently.stub("Interfaces", "ISwfDataAccess");
+
+    process.env.AWS_ACCESS_KEY_ID = "abc";
+    process.env.AWS_REGION = "abc";
+
+    ConstructorTest(test, options, null, swf);
+
+    test.done();
+  },
+  "Null AWS config throws an error in process.env.AWS_REGION is missing": function (test: nodeunit.Test): void {
+
+    var name = "workflowName";
+    var options =
+      {
+        "domain": "myDomain",
+        "taskList": "mainList",
+      };
+
+    var swf = gently.stub("Interfaces", "ISwfDataAccess");
+
+    process.env.AWS_ACCESS_KEY_ID = "abc";
+    process.env.AWS_SECRET_ACCESS_KEY = "abc";
+
+    ConstructorTest(test, options, null, swf);
+
+    test.done();
+  },
+  "Null AWS config doesn't throw an error in process.env is correctly set up": function (test: nodeunit.Test): void {
+
+    var name = "workflowName";
+    var options =
+      {
+        "domain": "myDomain",
+        "taskList": "mainList",
+      };
+
+    var swf = gently.stub("Interfaces", "ISwfDataAccess");
+
+    process.env.AWS_ACCESS_KEY_ID = "abc";
+    process.env.AWS_SECRET_ACCESS_KEY = "abc";
+    process.env.AWS_REGION = "abc";
+
+    var client = new workflow.WorkflowClient(options, null, swf);
 
     test.done();
   }

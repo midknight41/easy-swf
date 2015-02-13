@@ -11,18 +11,20 @@ import errors = require("./CustomErrors");
 
 export class WorkflowClient {
 
-  private config;
+  //private config;
   private workflow: interfaces.IOptions;
   private swf: dal.ISwfDataAccess;
 
-  constructor(workflow: interfaces.IOptions, awsConfig: any, swf?: dal.ISwfDataAccess) {
+  constructor(workflow: interfaces.IOptions, awsConfig?: any, swf?: dal.ISwfDataAccess) {
 
     this.validateOptions(workflow);
     this.validateConfig(awsConfig);
 
-    this.config = awsConfig;
+    //this.config = awsConfig;
 
-    AWS.config.update(this.config);
+    if (awsConfig != null) {
+      AWS.config.update(awsConfig);
+    }
 
     this.workflow = workflow;
 
@@ -34,21 +36,24 @@ export class WorkflowClient {
   }
 
   private validateOptions(workflow: interfaces.IOptions) {
-    if (workflow == null) throw new errors.NullOrEmptyArgumentError("workflow");
-    if (workflow.domain == null) throw new errors.InvalidArgumentError("domain is mandatory");
-    if (workflow.taskList == null) throw new errors.InvalidArgumentError("taskList is mandatory");
+    if (!workflow) throw new errors.NullOrEmptyArgumentError("workflow");
+    if (!workflow.domain) throw new errors.InvalidArgumentError("domain is mandatory");
+    if (!workflow.taskList) throw new errors.InvalidArgumentError("taskList is mandatory");
   }
 
   private validateConfig(awsConfig: any) {
 
-    if (awsConfig == null) throw new errors.NullOrEmptyArgumentError("awsConfig");
-    if (awsConfig.accessKeyId == null) throw new errors.InvalidArgumentError("accessKeyId is mandatory");
-    if (awsConfig.secretAccessKey == null) throw new errors.InvalidArgumentError("secretAccessKey is mandatory");
-    if (awsConfig.region == null) throw new errors.InvalidArgumentError("region is mandatory");
+    //validate config if provided as keys
+    if (awsConfig) {
+      if (!awsConfig.accessKeyId) throw new errors.InvalidArgumentError("accessKeyId is mandatory");
+      if (!awsConfig.secretAccessKey) throw new errors.InvalidArgumentError("secretAccessKey is mandatory");
+      if (!awsConfig.region) throw new errors.InvalidArgumentError("region is mandatory");
+      return;
+    }
 
-    //if (!process.env.AWS_ACCESS_KEY_ID && awsConfig !=null && awsConfig.accessKeyId == null) throw new errors.InvalidArgumentError("accessKeyId is mandatory");
-    //if (!process.env.AWS_SECRET_ACCESS_KEY && awsConfig.secretAccessKey == null) throw new errors.InvalidArgumentError("secretAccessKey is mandatory");
-    //if (!process.env.AWS_REGION && awsConfig.region == null) throw new errors.InvalidArgumentError("region is mandatory");
+    if (!process.env.AWS_ACCESS_KEY_ID) throw new errors.InvalidArgumentError("accessKeyId not found in process.env.AWS_ACCESS_KEY_ID");
+    if (!process.env.AWS_SECRET_ACCESS_KEY) throw new errors.InvalidArgumentError("secretAccessKey not found in process.env.AWS_SECRET_ACCESS_KEY");
+    if (!process.env.AWS_REGION) throw new errors.InvalidArgumentError("region not found in process.env.AWS_REGION");
 
   }
 

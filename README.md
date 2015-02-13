@@ -5,12 +5,6 @@ Easy SWF is a module made to make using the AWS Simple Workflow Service a little
 
 You need to be familiar with how SWF works. This [link](http://docs.aws.amazon.com/amazonswf/latest/developerguide/swf-dg-basic.html) is useful for understanding the core concepts.
 
-##Breaking Changes from Previous Version
-
-- The callback for ActivityHost.handleActivity() no longer includes an error. Errors are returned via ActivityHost.listen()
-- The callback for DeciderHost.handleWorkflow() no longer includes an error. Errors are returned via DeciderHost.listen()
-- DeciderContext.getFunction now requires a version parameter. This removed the need for explicit tast configuration.
-
 ##How to create a client
 
 ```
@@ -30,6 +24,8 @@ var awsConfig = {
 var client = new easy.WorkflowClient(workflow, awsConfig);
 
 ```
+awsConfig is optional. If the argument is not provided it will default to the AWS settings in process.env.
+
 
 ##How to handle activities
 
@@ -131,3 +127,8 @@ client.startWorkflow("example", "1", function (err) {
 });
 
 ```
+##Breaking Changes from Previous Version
+
+- The callback for ActivityHost.handleActivity() no longer includes an error. Errors are returned via ActivityHost.listen()
+- The callback for DeciderHost.handleWorkflow() no longer includes an error. Errors are returned via DeciderHost.listen()
+- DeciderContext.getFunction now requires a version parameter. This removed the need for explicit tast configuration.
