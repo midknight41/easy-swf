@@ -290,7 +290,7 @@ var testGroup2 = {
       return (data);
     });
 
-    gently.expect(t.swf, "respondRecordMarker", function (taskToken: string, callback: (err: any, data: any) => void) {
+    gently.expect(t.swf, "respondScheduleActivityTask", function (taskToken: string, decisions, callback: (err: any, data: any) => void) {
 
       test.equal(taskToken, t.state.taskToken, "task token not correctly set");
       callback(null, "data");
@@ -412,18 +412,19 @@ var testGroup2 = {
       return (data);
     });
 
-    gently.expect(t.swf, "respondFailWorkflowExecution", function (taskToken, message, message2, callback) {
-      test.equal(taskToken, t.state.taskToken, "taskToken not properly set");
-      test.equal(message, errorMsg, "wrong error message returned");
-      test.equal(message2, errorMsg, "wrong error detail returned");
+    gently.expect(t.swf, "respondScheduleActivityTask", function (taskToken: string, decisions, callback: (err: any, data: any) => void) {
+      var decision = decisions[0];
+
+      test.equal(decision.failWorkflowExecutionDecisionAttributes.reason, errorMsg, "wrong error message returned");
+      test.equal(decision.failWorkflowExecutionDecisionAttributes.details, errorMsg, "wrong error detail returned");
+      test.equal(taskToken, t.state.taskToken, "task token not correctly set");
       callback(null, "data");
+
     });
 
     var context = new dec.DecisionContext(t.taskList, t.parser, t.swf, null, t.state);
 
     context.failWorkflow(new Error(errorMsg));
-
-
 
     test.done();
   },
@@ -445,8 +446,9 @@ var testGroup2 = {
       return (data);
     });
 
-    gently.expect(t.swf, "respondRecordMarker", function (taskToken: string, callback: (err: any, data: any) => void) {
+    gently.expect(t.swf, "respondScheduleActivityTask", function (taskToken: string, decisions, callback: (err: any, data: any) => void) {
 
+      test.equal(decisions.length, 0, "no decisions should have been made");
       test.equal(taskToken, t.state.taskToken, "task token not correctly set");
       callback(null, "data");
 
@@ -474,8 +476,10 @@ var testGroup2 = {
       return (data);
     });
 
-    gently.expect(t.swf, "respondCompleteWorkflowExecution", function (taskToken: string, callback: (err: any, data: any) => void) {
+    gently.expect(t.swf, "respondScheduleActivityTask", function (taskToken: string, decisions, callback: (err: any, data: any) => void) {
 
+      test.equal(decisions[0].decisionType, "CompleteWorkflowExecution");
+      test.equal(decisions.length, 1, "no decisions should have been made");
       test.equal(taskToken, t.state.taskToken, "task token not correctly set");
       callback(null, "data");
 

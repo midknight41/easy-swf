@@ -1,5 +1,6 @@
 import AWS = require("aws-sdk");
 import DataAccess = require("./SwfDataAccess");
+import Decisions = require("./Decisions");
 import uuid = require("uuid");
 import a = require("./Activity");
 import e = require("./EventParser");
@@ -13,7 +14,6 @@ export class DecisionHost {
   private activityRegister: interfaces.IActivityRegister;
   public taskList: string;
   private domain: string;
-  //private decisionLogic;
   private workflowDeciders: any[];
   private eventParser: e.EventParser;
   private feedbackHandler: (err: Error, message: string, context: DecisionContext) => void;
@@ -218,22 +218,32 @@ export class DecisionContext implements interfaces.IDecisionContext {
   public failWorkflow(err: Error) {
     var me = this;
 
-    this.swf.respondFailWorkflowExecution(me.taskToken, err.message, err.message, function (err, data) {
+    me.feedbackHandler(null, "[Decider] failed Workflow", me);
 
-      me.feedbackHandler(err, "[Decider] failed Workflow", me);
+    var decision = Decisions.buildFailWorkflowExecution(err.message, err.message);
+    me.registerDecision(decision);
 
-    });
+    //this.swf.respondFailWorkflowExecution(me.taskToken, err.message, err.message, function (err, data) {
+
+    //  me.feedbackHandler(err, "[Decider] failed Workflow", me);
+
+    //});
   }
 
   public completeWorkflow() {
     //finish workflow execution
     var me = this;
 
-    this.swf.respondCompleteWorkflowExecution(me.taskToken, function (err, data) {
+    me.feedbackHandler(null, "[Decider] completed Workflow", me);
 
-      me.feedbackHandler(err, "[Decider] completed Workflow", me);
+    var decision = Decisions.buildCompleteWorkflowExecution();
+    me.registerDecision(decision);
+    
+    //this.swf.respondCompleteWorkflowExecution(me.taskToken, function (err, data) {
 
-    });
+    //  me.feedbackHandler(err, "[Decider] completed Workflow", me);
+
+    //});
   }
 
   public getFunction(name: string, version: string): any {
@@ -273,14 +283,18 @@ export class DecisionContext implements interfaces.IDecisionContext {
 
     var me = this;
     me.feedbackHandler(null, "[Decider] take no action", me);
+    //var decision = Decisions.buildRecordMarker("NoActionFromThisDecision");
+    me.registerDecision();
+    
+    //this.swf.submitDecisions(me.decisions);
 
-    this.swf.respondRecordMarker(this.taskToken, function (err, data) {
-      if (err != null) { me.feedbackHandler(err, "[Decider] ERROR: doNothing", me); }
+    //this.swf.respondRecordMarker(this.taskToken, function (err, data) {
+    //  if (err != null) { me.feedbackHandler(err, "[Decider] ERROR: doNothing", me); }
 
-    });
+    //});
 
   }
-  
+
   private getFirstActivity(activityName: string, version: string): interfaces.IActivity {
     var activity = this.activities.filter(function (item, index, array) {
 
@@ -321,43 +335,49 @@ export class DecisionContext implements interfaces.IDecisionContext {
 
     if (data == null) data = "";
 
-    var decision: AWS.Swf.Decision = {
-      decisionType: "ScheduleActivityTask",
-      scheduleActivityTaskDecisionAttributes: {
-        activityId: uuid.v4(),
-        input: data,
-        activityType:
-        {
-          name: activityName,
-          version: version
-        },
-        taskList: { name: taskList }
-      }
-    };
+    //var decision: AWS.Swf.Decision = {
+    //  decisionType: "ScheduleActivityTask",
+    //  scheduleActivityTaskDecisionAttributes: {
+    //    activityId: uuid.v4(),
+    //    input: data,
+    //    activityType:
+    //    {
+    //      name: activityName,
+    //      version: version
+    //    },
+    //    taskList: { name: taskList }
+    //  }
+    //};
 
-    me.decisions.push(decision);
+    var decision = Decisions.buildScheduleActivityTask(data, activityName, version, taskList);
 
-    process.nextTick(function () {
+    me.registerDecision(decision);
 
+  }
 
-      if (me.submissionRegistered == false) {
+  private registerDecision(decision?: AWS.Swf.Decision) {
+
+    var me = this;
+
+    if (decision) me.decisions.push(decision);
+
+    if (me.submissionRegistered == false) {
+
+      me.submissionRegistered = true;
+
+      process.nextTick(function () {
 
         me.feedbackHandler(null, "[Decider] submitting decisions", me);
 
-        me.submissionRegistered = true;
+        if (me.decisions == null) me.decisions = [];
 
         me.swf.respondScheduleActivityTask(me.taskToken, me.decisions, function (err, data) {
           if (err != null) { me.feedbackHandler(err, "[Decider] ERROR: respondDecisionTaskCompleted", me); }
 
         });
-
-      }
-
-    });
+      });
+    }
 
   }
 
 }
-
-
-

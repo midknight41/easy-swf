@@ -20,8 +20,6 @@ export class WorkflowClient {
     this.validateOptions(workflow);
     this.validateConfig(awsConfig);
 
-    //this.config = awsConfig;
-
     if (awsConfig != null) {
       AWS.config.update(awsConfig);
     }
@@ -43,17 +41,11 @@ export class WorkflowClient {
 
   private validateConfig(awsConfig: any) {
 
-    //validate config if provided as keys
-    if (awsConfig) {
-      if (!awsConfig.accessKeyId) throw new errors.InvalidArgumentError("accessKeyId is mandatory");
-      if (!awsConfig.secretAccessKey) throw new errors.InvalidArgumentError("secretAccessKey is mandatory");
-      if (!awsConfig.region) throw new errors.InvalidArgumentError("region is mandatory");
-      return;
-    }
+    if (awsConfig && awsConfig.accessKeyId && awsConfig.secretAccessKey && awsConfig.region) return;
 
-    if (!process.env.AWS_ACCESS_KEY_ID) throw new errors.InvalidArgumentError("accessKeyId not found in process.env.AWS_ACCESS_KEY_ID");
-    if (!process.env.AWS_SECRET_ACCESS_KEY) throw new errors.InvalidArgumentError("secretAccessKey not found in process.env.AWS_SECRET_ACCESS_KEY");
-    if (!process.env.AWS_REGION) throw new errors.InvalidArgumentError("region not found in process.env.AWS_REGION");
+    if (!process.env.AWS_ACCESS_KEY_ID) throw new errors.InvalidArgumentError("accessKeyId not found in config or process.env.AWS_ACCESS_KEY_ID");
+    if (!process.env.AWS_SECRET_ACCESS_KEY) throw new errors.InvalidArgumentError("secretAccessKey not found in config or process.env.AWS_SECRET_ACCESS_KEY");
+    if (!process.env.AWS_REGION) throw new errors.InvalidArgumentError("region not found in config or process.env.AWS_REGION");
 
   }
 
