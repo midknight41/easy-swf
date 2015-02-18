@@ -1,7 +1,7 @@
 {
   "name": "easy-swf",
   "description": "Easier way of using AWS Simple Workflow",
-  "version": "0.8.0",
+  "version": "1.0.0",
   "author": "Chad Macey <chad_macey@hotmail.com>",
   "homepage": "",
   "contributors": [
