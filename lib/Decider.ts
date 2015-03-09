@@ -8,6 +8,7 @@ import interfaces = require("./Interfaces");
 import wrapper = require("./FunctionWrapper");
 import errors = require("./CustomErrors");
 import utils = require("./Utils");
+import Q = require("q");
 
 export class DecisionHost {
   private swf: DataAccess.ISwfDataAccess;
@@ -223,11 +224,6 @@ export class DecisionContext implements interfaces.IDecisionContext {
     var decision = Decisions.buildFailWorkflowExecution(err.message, err.message);
     me.registerDecision(decision);
 
-    //this.swf.respondFailWorkflowExecution(me.taskToken, err.message, err.message, function (err, data) {
-
-    //  me.feedbackHandler(err, "[Decider] failed Workflow", me);
-
-    //});
   }
 
   public completeWorkflow() {
@@ -239,11 +235,14 @@ export class DecisionContext implements interfaces.IDecisionContext {
     var decision = Decisions.buildCompleteWorkflowExecution();
     me.registerDecision(decision);
     
-    //this.swf.respondCompleteWorkflowExecution(me.taskToken, function (err, data) {
+  }
 
-    //  me.feedbackHandler(err, "[Decider] completed Workflow", me);
+  public getPromise(name: string, version: string): any {
 
-    //});
+    var fnc = this.getFunction(name, version);
+
+    return Q.denodeify(fnc);
+
   }
 
   public getFunction(name: string, version: string): any {
@@ -283,16 +282,10 @@ export class DecisionContext implements interfaces.IDecisionContext {
 
     var me = this;
     me.feedbackHandler(null, "[Decider] take no action", me);
-    //var decision = Decisions.buildRecordMarker("NoActionFromThisDecision");
+    
     me.registerDecision();
     
-    //this.swf.submitDecisions(me.decisions);
-
-    //this.swf.respondRecordMarker(this.taskToken, function (err, data) {
-    //  if (err != null) { me.feedbackHandler(err, "[Decider] ERROR: doNothing", me); }
-
-    //});
-
+    
   }
 
   private getFirstActivity(activityName: string, version: string): interfaces.IActivity {
@@ -334,21 +327,7 @@ export class DecisionContext implements interfaces.IDecisionContext {
     this.feedbackHandler(null, "[Decider] scheduling activity " + activityName, me);
 
     if (data == null) data = "";
-
-    //var decision: AWS.Swf.Decision = {
-    //  decisionType: "ScheduleActivityTask",
-    //  scheduleActivityTaskDecisionAttributes: {
-    //    activityId: uuid.v4(),
-    //    input: data,
-    //    activityType:
-    //    {
-    //      name: activityName,
-    //      version: version
-    //    },
-    //    taskList: { name: taskList }
-    //  }
-    //};
-
+        
     var decision = Decisions.buildScheduleActivityTask(data, activityName, version, taskList);
 
     me.registerDecision(decision);

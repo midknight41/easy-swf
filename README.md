@@ -55,9 +55,7 @@ acts.handleActivity("taskThree", "1", function (data, next) {
 });
 
 acts.listen(function (err, message) {
-
   console.log(message);
-
 });
 
 ```
@@ -91,11 +89,8 @@ decider.handleWorkflow("example", "1", function(context) {
         console.log(finalData);
         context.completeWorkflow();
       });
-
     });
-
   });
-
 });
 
 decider.listen(function (err, message, context) {
@@ -110,14 +105,53 @@ decider.listen(function (err, message, context) {
   }
 
   console.log(message);
+});
 
+```
+And here's the equivalent using promises:
+```js
+var Q = require("q");
+var decider = client.createDeciderHost("taskList");
+
+decider.handleWorkflow("example", "1", function(context) {
+
+  var taskOne = context.getPromise("taskOne", "1");
+  var taskTwo = context.getPromise("taskTwo", "1");
+  var taskThree = context.getPromise("taskThree", "1");
+
+  Q.fcall(taskOne, context.input)
+    .then(taskTwo)
+    .then(taskThree)
+    .then(result => {
+	  console.log(result);
+	  context.completeWorkflow(result);
+    })
+    .catch(err => {
+      context.failWorkflow(err);
+    })
+    .done();
+
+});
+
+decider.listen(function (err, message, context) {
+
+	if (err != null) {
+		console.log("[Framework Error]", err);
+
+		if (context != null) {
+			context.failWorkflow(err);
+			return;
+		}
+	}
+
+	console.log(message);
 });
 
 ```
 
 ### The ```context``` object
 
-The ```context``` object represents the current state of the workflow and is used to interact with SWF. The state of the ```context``` object is rebuilt from the WorkflowExecutionHistory on every decision.
+The ```context``` object represents the current state of the WorkflowExecution and is used to interact with SWF. The state of the ```context``` object is rebuilt from the WorkflowExecutionHistory on every decision.
 
 The ```context``` object has the following methods:
 
@@ -125,7 +159,8 @@ The ```context``` object has the following methods:
 This returns different functions based on the  current WorkflowExecutionHistory. These functions will schedule tasks, return data from activities, or raise errors depending on what is appropriate given the WorkflowExecutionHistory.
 
 This allows you to write simpler logic in your decider using a traditional callback structure.
-
+##### .getPromise(name: string, version: string): Promise
+This wraps the ```getFunction``` method and returns a Promise instead.
 ##### .completeWorkflow()
 Tells SimpleWorkflow to complete the WorkflowExecution.
 ##### .failWorkflow(err: Error)
