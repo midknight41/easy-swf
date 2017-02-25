@@ -1,6 +1,8 @@
 
 # easy-swf
 
+[![Build Status](https://travis-ci.org/midknight41/easy-swf.svg?branch=master)](https://travis-ci.org/midknight41/easy-swf)
+
 easy-swf is a module made to make using the AWS Simple Workflow Service a little easier to use.
 
 You need to be familiar with how SWF works. This [link](http://docs.aws.amazon.com/amazonswf/latest/developerguide/swf-dg-basic.html) is useful for understanding the core concepts.

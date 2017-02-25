@@ -12,8 +12,8 @@
     "nodeunit": "^0.10.2"
   },
   "dependencies": {
-    "async": "^2.1.1",
-    "aws-sdk": "^2.7.19",
+    "async": "^2.1.5",
+    "aws-sdk": "^2.20.0",
     "q": "^1.2.0",
     "uuid": "^2.0.3"
   },
@@ -42,7 +42,8 @@
     "workflow"
   ],
   "scripts": {
-    "test": "nodeunit lib/Tests"
+    "test": "nodeunit lib/Tests",
+    "travis": "npm run test"
   },
   "license": "MIT"
 }
