@@ -1,6 +1,8 @@
 
 # easy-swf
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/midknight41/easy-swf.svg)](https://greenkeeper.io/)
+
 [![Build Status](https://travis-ci.org/midknight41/easy-swf.svg?branch=master)](https://travis-ci.org/midknight41/easy-swf)
 
 easy-swf is a module made to make using the AWS Simple Workflow Service a little easier to use.
