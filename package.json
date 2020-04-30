@@ -15,7 +15,7 @@
     "async": "^2.1.5",
     "aws-sdk": "^2.437.0",
     "q": "^1.2.0",
-    "uuid": "^3.0.1"
+    "uuid": "^8.0.0"
   },
   "main": "lib/Workflow.js",
   "engines": {
